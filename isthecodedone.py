@@ -11,6 +11,7 @@ import numpy as np
 listy = []
 term_lum = []
 term_mod = []
+term_other = []
 
 file_cab = input('Please provide path of top folder using \'\' :')
 os.chdir(file_cab)
@@ -32,7 +33,7 @@ for file in os.listdir(file_cab):
                     for line in f:
                         # Uncomment this section if you only care
                         # whether the run has finished or not
-                        # if 'termination code:' in line:
+                        if 'termination code:' in line:
                             #print(line)
                             #name = os.path.split(whichc)[-1]
                             #nme = str(name)
@@ -41,22 +42,31 @@ for file in os.listdir(file_cab):
                             #listy.append(numb)
                             #print(os.path.split(whichc)[-1]+' has completed its run')
                             #os.chdir(file_cab)
-                        if 'termination code: log_L_lower_limit' in line:
-                            name = os.path.split(whichc)[-1]
-                            nme = str(name)
-                            num = nme.replace('c','')
-                            numb = int(num)
-                            listy.append(numb)
-                            os.chdir(file_cab)
-                            term_lum.append(numb)
-                        if 'termination code: max_model_number' in line:
-                            name = os.path.split(whichc)[-1]
-                            nme = str(name)
-                            num = nme.replace('c','')
-                            numb = int(num)
-                            listy.append(numb)
-                            os.chdir(file_cab)
-                            term_mod.append(numb)
+                            if 'termination code: log_L_lower_limit' in line:
+                                name = os.path.split(whichc)[-1]
+                                nme = str(name)
+                                num = nme.replace('c','')
+                                numb = int(num)
+                                listy.append(numb)
+                                os.chdir(file_cab)
+                                term_lum.append(numb)
+                            if 'termination code: max_model_number' in line:
+                                name = os.path.split(whichc)[-1]
+                                nme = str(name)
+                                num = nme.replace('c','')
+                                numb = int(num)
+                                listy.append(numb)
+                                os.chdir(file_cab)
+                                term_mod.append(numb)
+                            if not 'termination code: log_L_lower_limit' in line:
+                                if not 'termination code: max_model_number' in line:
+                                    name = os.path.split(whichc)[-1]
+                                    nme = str(name)
+                                    num = nme.replace('c','')
+                                    numb = int(num)
+                                    listy.append(numb)
+                                    os.chdir(file_cab)
+                                    term_other.append(numb)
                         else:
                             os.chdir(file_cab)
 
@@ -71,6 +81,10 @@ rl = len(reached_l)
 my_term_m = np.asarray(term_mod)
 max_models = np.sort(my_term_m)
 mm = len(max_models)
+my_term_o = np.asarray(term_other)
+other_terms = np.sort(my_term_o)
+mo = len(other_terms)
+
 for i in range(1,21):
     if not i in q:
         missing.append(i)
@@ -80,3 +94,5 @@ print(str(rl)+' directories reached 0.1 solar luminosities')
 print(reached_l)
 print(str(mm)+' directories terminated because maximum model number was achieved')
 print(max_models)
+print(str(mo)+' directors terminated for some other reason - GO LOOK WHY!')
+print(other_terms)

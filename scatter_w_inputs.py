@@ -23,7 +23,7 @@ youarehere = os.getcwd()
 # Move into directories 
 # main_dir = os.getcwd()
 # Input top most directory
-main_dir = input('Please provide topmost directory (i.e. we want main_dir from main_dir/name/c1 with \'\' :')
+main_dir = input('Please provide topmost directory (i.e. we want main_dir from main_dir/name/c1) with \'\' :')
 os.chdir(main_dir)
 print('Currently in directory '+os.getcwd())
 for file in os.listdir(main_dir):
@@ -83,25 +83,50 @@ np.savetxt('Block.out',Block,delimiter=',')
 
 # Now let's graph this! We have here Mass v. Blocker, with Reimers colormap but you could totally change it up! 
 
-rmax = round(max(Reims),1)
-rmin = round(min(Reims),1)
-bmax = round(max(Block),1)
-bmin = round(min(Block),1)
-mmax = round(max(StarM),1)
-mmin = round(min(StarM),1)
+# rmax = round(max(Reims),2)
+# rmin = round(min(Reims),2)
+# bmax = round(max(Block),2)
+# bmin = round(min(Block),2)
+# mmax = round(max(StarM),2)
+# mmin = round(min(StarM),2)
+# lmax = round(max(Lumi),2)
+# lmin = round(min(Lumi),2)
+
+# Ask User Questions about what to Plot!
+
+# color = input('What colormap would you like (not rainbow!)')
+Xax = input('What would you like your x-axis to be (StarM,Lumi,Block,Reims)?')
+xlab = raw_input('X-axis name:')
+Yax = input('What would you like your y-axis to be (StarM,Lumi,Block,Reims)?')
+ylab = raw_input('Y-axis name:')
+Colr = input('What should the color mapping be to (StarM,Lumi,Block,Reims)?')
+clab = raw_input('Colormap label name:')
+
+xmx = round(max(Xax),2)+0.01
+xmn = round(min(Xax),2)-0.01
+ymx = round(max(Yax),2)+0.01
+ymn = round(min(Yax),2)-0.01
+cmx = round(max(Colr),2)
+cmn = round(min(Colr),2)
+
+# print('X,min,max:'+Xax+xmx+xmn+' Y,min,max:'+Yax+ymx+ymn+' Col,min,max:'+Colr+cmx+cmn)
 
 cols=plt.cm.gnuplot_r
-
 fig, ax = plt.subplots()
-plot = ax.scatter(Block,StarM,s=50,c=Reims,cmap=cols,vmin=rmin,vmax=rmax,edgecolor='none')
+plot = ax.scatter(Xax,Yax,s=50,c=Colr,cmap=cols,vmin=cmn,vmax=cmx,edgecolor='none')
 cbar = fig.colorbar(plot)
 
-ax.set_title('Final Star Mass v. Blocker Scaling Factor')
-ax.set_xlabel('Blocker')
-ax.set_ylabel('Final Mass')
-ax.set_xlim([bmin,bmax])
-ax.set_ylim([mmin,mmax])
+ax.set_title(ylab+' v. '+xlab)
+ax.title.set_fontsize(20)
+ax.set_xlabel(xlab)
+ax.set_ylabel(ylab)
+ax.xaxis.label.set_fontsize(18)
+ax.set_xlim([xmn,xmx])
+ax.set_ylim([ymn,ymx])
+ax.yaxis.label.set_fontsize(18)
 ax.grid()
+
+cbar.set_label(clab)
 
 now = datetime.datetime.now()
 month = str(now.month)
