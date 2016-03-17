@@ -82,19 +82,10 @@ np.savetxt('Reims.out',Reims,delimiter=',')
 np.savetxt('Block.out',Block,delimiter=',')
 
 # Now let's graph this! We have here Mass v. Blocker, with Reimers colormap but you could totally change it up! 
-
-# rmax = round(max(Reims),2)
-# rmin = round(min(Reims),2)
-# bmax = round(max(Block),2)
-# bmin = round(min(Block),2)
-# mmax = round(max(StarM),2)
-# mmin = round(min(StarM),2)
-# lmax = round(max(Lumi),2)
-# lmin = round(min(Lumi),2)
-
-# Ask User Questions about what to Plot!
+# Ask User Questions about what to Plot instead!
 
 # color = input('What colormap would you like (not rainbow!)')
+
 Xax = input('What would you like your x-axis to be (StarM,Lumi,Block,Reims)?')
 xlab = raw_input('X-axis name:')
 Yax = input('What would you like your y-axis to be (StarM,Lumi,Block,Reims)?')
@@ -108,8 +99,6 @@ ymx = round(max(Yax),2)+0.01
 ymn = round(min(Yax),2)-0.01
 cmx = round(max(Colr),2)
 cmn = round(min(Colr),2)
-
-# print('X,min,max:'+Xax+xmx+xmn+' Y,min,max:'+Yax+ymx+ymn+' Col,min,max:'+Colr+cmx+cmn)
 
 cols=plt.cm.gnuplot_r
 fig, ax = plt.subplots()
