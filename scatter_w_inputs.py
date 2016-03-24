@@ -18,6 +18,7 @@ StarM = []
 Reims = []
 Block = []
 Lumi = []
+Temp = []
 
 youarehere = os.getcwd()
 # Move into directories 
@@ -28,7 +29,8 @@ os.chdir(main_dir)
 print('Currently in directory '+os.getcwd())
 for file in os.listdir(main_dir):
     #matchf = re.match('\Abloc\-rand\_reim\-[0-9]\.[0-9]\Z',file)
-    matchf = re.match('\Areim\_breadth\_test\Z',file)
+    #matchf = re.match('\Areim\_breadth\_test\Z',file)
+    matchf = re.match('\Ares\_study\_reim\-[0-9]\.[0-9]\Z',file)
     if matchf:
         os.chdir(file)
         file_cab = os.getcwd()
@@ -37,6 +39,7 @@ for file in os.listdir(main_dir):
             matchc = re.match('\Ac([0-9]*)\Z',file)
             if matchc:
                 os.chdir(file)
+                print('In directory:'+os.getcwd())
                 # Get Stellar Mass
                 s = ms.history_data()
                 mass = s.get('star_mass')
@@ -45,9 +48,12 @@ for file in os.listdir(main_dir):
                 fin_M = mass[lmm]
                 lum = s.get('log_L')
                 fin_L = lum[lmm]
-                print(os.getcwd())
-                print(fin_M)
-                print(fin_L)
+                tem = s.get('log_Teff')
+                fin_T = tem[lmm]
+                #print(os.getcwd())
+                print('Final mass:'+str(fin_M))
+                print('Final lumi:'+str(fin_L))
+                #print('Final temp:'+str(fin_T))
                 if fin_L < 0:
                     Lumi.append(fin_L)
                     StarM.append(fin_M)
@@ -86,11 +92,11 @@ np.savetxt('Block.out',Block,delimiter=',')
 
 # color = input('What colormap would you like (not rainbow!)')
 
-Xax = input('What would you like your x-axis to be (StarM,Lumi,Block,Reims)?')
+Xax = input('What would you like your x-axis to be (StarM,Lumi,Block,Reims,Temp)?')
 xlab = raw_input('X-axis name:')
-Yax = input('What would you like your y-axis to be (StarM,Lumi,Block,Reims)?')
+Yax = input('What would you like your y-axis to be (StarM,Lumi,Block,Reims,Temp)?')
 ylab = raw_input('Y-axis name:')
-Colr = input('What should the color mapping be to (StarM,Lumi,Block,Reims)?')
+Colr = input('What should the color mapping be to (StarM,Lumi,Block,Reims,Temp)?')
 clab = raw_input('Colormap label name:')
 
 xmx = round(max(Xax),2)+0.01

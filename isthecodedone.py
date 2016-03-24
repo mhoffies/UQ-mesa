@@ -16,9 +16,6 @@ term_other = []
 file_cab = input('Please provide path of top folder using \'\' :')
 os.chdir(file_cab)
 print('Now in directory'+os.getcwd())
-
-# file_cab = os.getcwd()
-# print file_cab
 for file in os.listdir(file_cab):
     matchc = re.match('\Ac([0-9]*)\Z',file)
     if matchc:
