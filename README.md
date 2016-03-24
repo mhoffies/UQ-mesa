@@ -5,3 +5,5 @@ Some of my analyzing scripts utilise the mesa module for python from NuGridPy (n
 - isthecodedone.py is a script that runs through subdirectories of a a MESA run folder and prints out which folders are done and what their termination code was.
 - scatter_w_inputs.py uses the mesa module to extract final parameter values and extracts inlist information. User inputs desired x axis, y axis, and colormap. 
 - read_n_scatter.py is the basis for scatter_w_inputs except it only plots Blocker v. Mass with Reimers colormap.
+- plot_w_inputs.py creates line plots for Blocker v. Mass (and organizes by Reimers in the process).
+- make_hr.py makes either single HR plot for multiple folders, or combines multiple folder's HR info to one plot.
