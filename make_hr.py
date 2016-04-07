@@ -8,8 +8,9 @@ import numpy as np
 import matplotlib.pyplot as plt
 import os, re, shutil
 import datetime
+#from pylab import *
 
-Q = input('Do you want a single H-R plot [S] per folder or all H-R paths on one diagram[A]? [S/A] :')
+Q = raw_input('Do you want a single H-R plot [S] per folder or all H-R paths on one diagram[A]? [S/A] :')
 
 # if not os.path.exists('HRs'):
 #         os.mkdir('HRs')        
@@ -21,9 +22,9 @@ da = str(now.day)
 hr = str(now.hour)
 mn = str(now.minute)                                        
 
-cols = ['voilet','r','orange','y','g','b','indigo','grey','k']
-nums = [0.3,0.4,0.5,0.6,0.7,0.8,0.9,1.0,1.1]
-keys = dict(zip(nums,cols))                
+#cols = ['voilet','r','orange','y','g','b','indigo','grey','k']
+#nums = [0.3,0.4,0.5,0.6,0.7,0.8,0.9,1.0,1.1]
+#keys = dict(zip(nums,cols))                
 
 def ReadInls(inlist,value):
         inl = open(inlist,'r')
@@ -50,20 +51,58 @@ def MakeHRPlot(L,T,kind,M,savename):
         ax.set_ylim([min(L)-0.1,max(L)+0.1])
         ax.yaxis.label.set_fontsize(18)
         plt.savefig(savename)
-        
+
+#FV = raw_input('Folder path name: ')
+FV = '/data/mhoffman/NUQ/fine_grid'
+#reg = raw_input('Regex expression to match: ')
+reg = '\Afine\_grid\_([0-9]*)\-([0-9]*)\Z'
+X = []
+Y = []
+os.chdir(FV)
+for file in os.listdir(FV):
+        matchf = re.match(reg,file)
+        if matchf:
+                os.chdir(file)
+                file_cab = os.getcwd()
+                for file in os.listdir(file_cab):
+                        matchc = re.match('\Ac([0-9]*)\Z',file)
+                        if matchc:
+                                os.chdir(file)
+                                print('Currently in...'+os.getcwd())
+                                x = ReadInls('inlist_1.0','Blocker')
+                                y = ReadInls('inlist_1.0','Reimers')
+                                if x not in X:
+                                        X.append(x)
+                                if y not in Y:
+                                        Y.append(y)
+                                os.chdir(file_cab)
+                os.chdir(FV)
+print X
+print Y
+print len(X)
+cmap = plt.get_cmap('jet')
+Colors = [cmap(i) for i in Y]
+print Colors
+keys = dict(zip(Y,Colors))
+print keys
+#exit()
+
 if Q == 'S':
-        FV = input('Folder path name with \'\' : ')
         os.chdir(FV)
         if not os.path.exists('HRs'):
                 os.mkdir('HRs')
-        today = mo+da+mn+hr
+        today = mo+da+hr+mn 
         os.chdir(FV+'/HRs')
         if not os.path.exists(today):
                 os.mkdir(today)
+        os.chdir(FV+'/HRs/'+today)
+        if not os.path.exists('failed'):
+                os.mkdir('failed')
         os.chdir(FV)
         for file in os.listdir(FV):
-            matchf = re.match('\Abloc\-rand\_reim\-[0-9]\.[0-9]\Z',file)
-            if matchf:
+            #matchf = re.match('\Abloc\-rand\_reim\-[0-9]\.[0-9]\Z',file)
+                matchf = re.match(reg,file)
+                if matchf:
                     os.chdir(file)
                     file_cab = os.getcwd()
                     for file in os.listdir(file_cab):
@@ -78,20 +117,23 @@ if Q == 'S':
                                 Lumi = s.get('log_L')
                                 lastn = len(Lumi) - 1
                                 final_L = Lumi[lastn]          
-                                if final_L < 0:
-                                        B = ReadInls('inlist_1.0','Blocker')
-                                        print B
-                                        R = ReadInls('inlist_1.0','Reimers')
-                                        print R
-                                        # Make an HR plot
-                                        os.chdir(FV+'/HRs/'+today)
-                                        name = 'R'+str(R)+'_B'+str(B)+'.png'
-                                        Sh = keys[R]
+                                B = ReadInls('inlist_1.0','Blocker')
+                                print B
+                                R = ReadInls('inlist_1.0','Reimers')
+                                print R
+                                # Make an HR plot
+                                os.chdir(FV+'/HRs/'+today)
+                                name = 'R'+str(R)+'_B'+str(B)+'.png'
+                                Sh = keys[R]
+                                #MakeHRPlot(Lumi,Temp,'l',Sh,name)
+                                if final_L > -0.999:
+                                        os.chdir(FV+'/HRs/'+today+'/failed')
                                         MakeHRPlot(Lumi,Temp,'l',Sh,name)
                                         plt.close()
-                                        os.chdir(file_cab)                                              
+                                        os.chdir(file_cab)
                                 else:
-                                        print('Luminosity too low, excluding point!')
+                                        MakeHRPlot(Lumi,Temp,'l',Sh,name)
+                                        plt.close()
                                         os.chdir(file_cab)
                     os.chdir(FV)
         os.chdir(youarehere)

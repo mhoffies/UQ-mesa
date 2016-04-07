@@ -20,6 +20,11 @@ Block = []
 Lumi = []
 Temp = []
 
+failM = []
+failR = []
+failB = []
+failL = []
+
 youarehere = os.getcwd()
 # Move into directories 
 # main_dir = os.getcwd()
@@ -28,9 +33,11 @@ main_dir = input('Please provide topmost directory (i.e. we want main_dir from m
 os.chdir(main_dir)
 print('Currently in directory '+os.getcwd())
 for file in os.listdir(main_dir):
+    matchf = re.match('\Afine\_grid\_([0-9]*)\-([0-9]*)\Z',file)
     #matchf = re.match('\Abloc\-rand\_reim\-[0-9]\.[0-9]\Z',file)
     #matchf = re.match('\Areim\_breadth\_test\Z',file)
-    matchf = re.match('\Ares\_study\_reim\-[0-9]\.[0-9]\Z',file)
+    #matchf = re.match('\Ares\_study\_reim\-[0-9]\.[0-9]\Z',file)
+    #matchf = re.match('\Areim\-probe\_bloc\-0\.1\Z',file)
     if matchf:
         os.chdir(file)
         file_cab = os.getcwd()
@@ -77,7 +84,25 @@ for file in os.listdir(main_dir):
                             os.chdir(file_cab)
                 else:
                     print('Final luminosity was not low enough, this point has been excluded!')
-                    os.chdir(file_cab)
+                    failL.append(fin_L)
+                    failM.append(fin_M)
+                    inl = open('inlist_1.0','r')
+                    for line in inl:
+                        if 'Reimers_scaling_' in line:
+                            a = line
+                            lastR = re.sub('      Reimers\_scaling\_factor \= ','',a)
+                            Rval = re.sub('d','e',lastR)
+                            R = float(Rval)
+                            print(R)
+                            failR.append(R)
+                        if 'Blocker_scaling_' in line:
+                            b = line
+                            lastB = re.sub('      Blocker\_scaling\_factor \= ','',b)
+                            Bval = re.sub('d','e',lastB)
+                            B = float(Bval)
+                            print(B)
+                            failB.append(B)
+                            os.chdir(file_cab)
     os.chdir(main_dir)
     
 if not os.path.exists('tmps'):
@@ -86,6 +111,10 @@ os.chdir(main_dir+'/tmps')
 np.savetxt('StarM.out',StarM,delimiter=',')
 np.savetxt('Reims.out',Reims,delimiter=',')
 np.savetxt('Block.out',Block,delimiter=',')
+np.savetxt('failM.out',failM,delimiter=',')
+np.savetxt('failB.out',failB,delimiter=',')
+np.savetxt('failR.out',failR,delimiter=',')
+np.savetxt('failL.out',failL,delimiter=',')
 
 # Now let's graph this! We have here Mass v. Blocker, with Reimers colormap but you could totally change it up! 
 # Ask User Questions about what to Plot instead!
