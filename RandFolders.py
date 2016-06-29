@@ -37,4 +37,12 @@ for i in range(pts):
     print('Blocker changing to ...'+str(bx))
     print('Folder name: '+name+'\n')
     print('-----------------------------------------')
+    templ = open('batch_cmd.sh','r')
+    runfile = open('run_script','a')
+    for line in templ:
+        if './rn' in line:
+            runfile.write('./run > run_out_'+str(i)+'.log\n')
+        else:
+            runfile.write(line)
+    os.system('qsub run_script')
     os.chdir(youarehere)

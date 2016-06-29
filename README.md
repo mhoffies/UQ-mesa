@@ -7,3 +7,5 @@ Some of my analyzing scripts utilise the mesa module for python from NuGridPy (n
 - read_n_scatter.py is the basis for scatter_w_inputs except it only plots Blocker v. Mass with Reimers colormap.
 - plot_w_inputs.py creates line plots for Blocker v. Mass (and organizes by Reimers in the process).
 - make_hr.py makes either single HR plot for multiple folders, or combines multiple folder's HR info to one plot.
+- quickplot.py reads .out files created by initial scatter_w_inputs.py to make plots quickly
+- RandFolders.py makes a directory of folders where Reimers and Blocker values are random & unique to each folder

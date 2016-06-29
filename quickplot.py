@@ -45,7 +45,7 @@ for key, value in sorted(keys.iteritems(), key=lambda (k,v): (v,k)):
 Xax = 'Block'
 Yax = 'Reims'
 Q = 's'
-Titl = 'n'
+Titl = 'y'
 Q2 = 'y'
 
 if Q2 == 'y':
@@ -79,9 +79,9 @@ if Q == 's':
     kC = keys[Cols+'.out']
     C = data[kC]
     fig, ax = plt.subplots()
-    plot = ax.scatter(X,Y,s=75,c=C,cmap=plt.cm.gnuplot,vmin=(max(C)),vmax=(min(C)),linewidth=1)
+    plot = ax.scatter(X,Y,s=50,c=C,cmap=plt.cm.gnuplot,vmin=(max(C)),vmax=(min(C)),linewidth=1)
     if Q2 == 'y':
-        plot2 = ax.scatter(FX,FY,s=75, c='g', vmin=min(C), vmax=max(C), edgecolor='limegreen', linewidth=2, label='Not converged')
+        plot2 = ax.scatter(FX,FY,s=50, c='g', vmin=min(C), vmax=max(C), edgecolor='limegreen', linewidth=2, label='Not converged')
     box = ax.get_position()
     ax.set_position([box.x0, box.y0, box.width * 0.7, box.height])
     cbar = fig.colorbar(plot)
@@ -105,10 +105,23 @@ if Q == 'su':
     ax = fig.gca(projection='3d')
     surf = ax.plot_surface(XX, YY, Z, rstride=1, cstride=1, cmap=plt.cm.gnuplot, vmax=np.max(Z), vmin=np.min(Z))
     cbar = fig.colorbar(surf)
-    cbar.set_label(Cols)
     
 if Titl == 'y':
     print('In Construction...')
+    Xname = raw_input('What should the X axis be called?')
+    Yname = raw_input('What should the Y axis be called?')
+    Gtitle = raw_input('What should the title be?')
+    Colba = raw_input('What is the colorbar label?')
+    cbar.set_label(Colba)
+    ax.set_title(Gtitle)
+    ax.set_xlabel(Xname)
+    ax.set_ylabel(Yname)
+    xmin = min(X) - 0.01
+    xmax = max(X) + 0.01
+    ymin = min(Y) - 0.01
+    ymax = max(Y) + 0.01
+    ax.set_xlim(xmin,xmax)
+    ax.set_ylim(ymin,ymax)
 if Titl == 'n':
     ax.set_xlabel(Xax)
     ax.set_ylabel(Yax)
@@ -121,11 +134,10 @@ if Titl == 'n':
         ymin = min(Y) - 0.01
         ymax = max(Y) + 0.01
         ax.set_xlim(xmin,xmax)
-        ax.set_ylim(ymin,ymax)
-                        
-else:
-    print('Errr... not sure what you want for titles, then...?')
-    exit()
+        ax.set_ylim(ymin,ymax)                    
+#else:
+#    print('Errr... not sure what you want for titles, then...?')
+#    exit()
 
 ax.title.set_fontsize(20)
 ax.yaxis.label.set_fontsize(18)

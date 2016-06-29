@@ -59,6 +59,7 @@ reg = '\Afine\_grid\_([0-9]*)\-([0-9]*)\Z'
 X = []
 Y = []
 os.chdir(FV)
+print(os.getcwd())
 for file in os.listdir(FV):
         matchf = re.match(reg,file)
         if matchf:
@@ -85,13 +86,13 @@ Colors = [cmap(i) for i in Y]
 print Colors
 keys = dict(zip(Y,Colors))
 print keys
-#exit()
+
 
 if Q == 'S':
         os.chdir(FV)
         if not os.path.exists('HRs'):
                 os.mkdir('HRs')
-        today = mo+da+hr+mn 
+        today = mo+da+'_'+hr+mn 
         os.chdir(FV+'/HRs')
         if not os.path.exists(today):
                 os.mkdir(today)
@@ -100,7 +101,6 @@ if Q == 'S':
                 os.mkdir('failed')
         os.chdir(FV)
         for file in os.listdir(FV):
-            #matchf = re.match('\Abloc\-rand\_reim\-[0-9]\.[0-9]\Z',file)
                 matchf = re.match(reg,file)
                 if matchf:
                     os.chdir(file)
