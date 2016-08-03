@@ -22,9 +22,9 @@ for file in os.listdir(file_cab):
     matchc = re.match('\Ac([0-9]*)\Z',file)
     if matchc:
 #        print file
-        os.chdir(file)
+        os.chdir(file_cab+'/'+file)
         whichc = os.getcwd()
-#        print(whichc)
+        print(whichc)
         for file in os.listdir(whichc):
             logtempl = re.match('\Amesa\_pmswd_([0-9]*)\.log\Z',file)
             if logtempl:
@@ -76,6 +76,7 @@ for file in os.listdir(file_cab):
                                         listy.append(numb)
                                         os.chdir(file_cab)
                                         term_other.append(numb)
+                            os.chdir(file_cab)
                         else:
                             os.chdir(file_cab)
 
