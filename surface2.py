@@ -67,35 +67,27 @@ def REORDER(nX,nY,nC):
     # up accordingly 
     
     Q = np.where(np.diff(XX[:]))[0]+1
-    FirstX = XX[0:Q[0]]
     FirstY = XY[0:Q[0]]
     FirstZ = XZ[0:Q[0]]
-
-    Xdiv = []
+    
     Ydiv = []
     Zdiv = []
-    Xdiv.append(FirstX)
     Ydiv.append(FirstY)
     Zdiv.append(FirstZ)
     
     for i in range(len(Q)-1):
         a = Q[i]+1
         b = Q[i+1]
-        NewX = XX[a:b]
         NewY = XY[a:b]
         NewZ = XZ[a:b]
-        Xdiv.append(NewX)
         Ydiv.append(NewY)
         Zdiv.append(NewZ)
-
-    LastX = XX[Q[len(Q)-1]:len(XX)-1]    
+        
     LastY = XY[Q[len(Q)-1]:len(XX)-1]
     LastZ = XZ[Q[len(Q)-1]:len(XX)-1]
-    Xdiv.append(LastX)
     Ydiv.append(LastY)
     Zdiv.append(LastZ)
 
-    SortedX = []
     SortedY = []
     SortedZ = []
 
@@ -105,13 +97,10 @@ def REORDER(nX,nY,nC):
     for i in range(len(Ydiv)):
             
         YOrd = np.argsort(Ydiv[i])
-        USX = Xdiv[i]
         USY = Ydiv[i]
         USZ = Zdiv[i]
-        SorX = USX[YOrd]
         SorY = USY[YOrd]
         SorZ = USZ[YOrd]
-        SortedX.append(SorX)
         SortedY.append(SorY)
         SortedZ.append(SorZ)
 
