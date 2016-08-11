@@ -44,9 +44,9 @@ for key, value in sorted(keys.iteritems(), key=lambda (k,v): (v,k)):
 #Q2 = raw_input('Would you like to see failed points [y/n]? ')
 Xax = 'Block'
 Yax = 'Reims'
-Q = 's'
+Q = 'su'
 Titl = 'y'
-Q2 = 'y'
+Q2 = 'n'
 
 if Q2 == 'y':
     #FXax = raw_input('Failed x axis? ')
@@ -87,10 +87,12 @@ if Q == 's':
     cbar = fig.colorbar(plot)
     cbar.set_label(Cols)
     legend = ax.legend(scatterpoints=1, fancybox = 'True', loc='upper left', bbox_to_anchor=(0.8,-0.035), fontsize='small')
+
 if Q == 'l':
     plott = 'line'
     print('In Construction...')
     exit()
+
 if Q == 'su':
     plott = 'surf'
     Cols = raw_input('Which quantity would you like to be your colormap?')
