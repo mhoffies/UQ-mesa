@@ -54,52 +54,63 @@ def MakeHRPlot(L,T,kind,M,savename):
 
 #FV = raw_input('Folder path name: ')
 FV = '/data/mhoffman/NUQ/fine_grid'
-#reg = raw_input('Regex expression to match: ')
-reg = '\Afine\_grid\_([0-9]*)\-([0-9]*)\Z'
+
 X = []
 Y = []
+
 os.chdir(FV)
 print(os.getcwd())
 for file in os.listdir(FV):
-        matchf = re.match(reg,file)
-        if matchf:
-                os.chdir(file)
-                file_cab = os.getcwd()
-                for file in os.listdir(file_cab):
-                        matchc = re.match('\Ac([0-9]*)\Z',file)
-                        if matchc:
-                                os.chdir(file)
-                                print('Currently in...'+os.getcwd())
-                                x = ReadInls('inlist_1.0','Blocker')
-                                y = ReadInls('inlist_1.0','Reimers')
-                                if x not in X:
-                                        X.append(x)
-                                if y not in Y:
-                                        Y.append(y)
-                                os.chdir(file_cab)
-                os.chdir(FV)
+
+        os.chdir(file)
+        file_cab = os.getcwd()
+
+        for file in os.listdir(file_cab):
+                matchc = re.match('\Ac([0-9]*)\Z',file)
+                if matchc:
+                        os.chdir(file)
+                        print('Currently in...'+os.getcwd())
+                        x = ReadInls('inlist_1.0','Blocker')
+                        y = ReadInls('inlist_1.0','Reimers')
+
+                        if x not in X:
+                                X.append(x)
+                        if y not in Y:
+                                Y.append(y)
+                        os.chdir(file_cab)
+
+        os.chdir(FV)
+
 print X
 print Y
 print len(X)
+
 cmap = plt.get_cmap('jet')
 Colors = [cmap(i) for i in Y]
+
 print Colors
+
 keys = dict(zip(Y,Colors))
+
 print keys
 
 
 if Q == 'S':
         os.chdir(FV)
+
         if not os.path.exists('HRs'):
                 os.mkdir('HRs')
         today = mo+da+'_'+hr+mn 
         os.chdir(FV+'/HRs')
+
         if not os.path.exists(today):
                 os.mkdir(today)
         os.chdir(FV+'/HRs/'+today)
+
         if not os.path.exists('failed'):
                 os.mkdir('failed')
         os.chdir(FV)
+
         for file in os.listdir(FV):
                 matchf = re.match(reg,file)
                 if matchf:
@@ -110,6 +121,7 @@ if Q == 'S':
                             if matchc:
                                 os.chdir(file)
                                 print('Currently in...'+os.getcwd())
+
                                 # Get Stellar Mass
                                 s = ms.history_data()
                                 Mass = s.get('star_mass')
@@ -117,14 +129,17 @@ if Q == 'S':
                                 Lumi = s.get('log_L')
                                 lastn = len(Lumi) - 1
                                 final_L = Lumi[lastn]          
+
                                 B = ReadInls('inlist_1.0','Blocker')
                                 print B
                                 R = ReadInls('inlist_1.0','Reimers')
                                 print R
+
                                 # Make an HR plot
                                 os.chdir(FV+'/HRs/'+today)
                                 name = 'R'+str(R)+'_B'+str(B)+'.png'
                                 Sh = keys[R]
+
                                 #MakeHRPlot(Lumi,Temp,'l',Sh,name)
                                 if final_L > -0.999:
                                         os.chdir(FV+'/HRs/'+today+'/failed')
@@ -135,25 +150,32 @@ if Q == 'S':
                                         MakeHRPlot(Lumi,Temp,'l',Sh,name)
                                         plt.close()
                                         os.chdir(file_cab)
-                    os.chdir(FV)
+
+                os.chdir(FV)
+
         os.chdir(youarehere)
 
 if Q == 'A':
+        
         Masses = []
         Temperatures = []
         Luminosities = []
         Reimers = []
         Blocker = []
         Textrema = []
+
         FV = input('Folder path name with \'\' : ')
         os.chdir(FV)
+
         if not os.path.exists('HRs'):
                 os.mkdir('HRs')
         # for file in os.listdir(FV):
         #         matchf = re.match('\Abloc\-rand\_reim\-[0-9]\.[0-9]\Z',file)
         #         if matchf:
         #                 os.chdir(file)
+
         file_cab = os.getcwd()
+
         for file in os.listdir(file_cab):
                 matchc = re.match('\Ac([0-9]*)\Z',file)
                 if matchc:
@@ -166,6 +188,7 @@ if Q == 'A':
                         Lumi = s.get('log_L')
                         lastn = len(Lumi) - 1
                         final_L = Lumi[lastn]
+
                         if final_L < 0:
                                 B = ReadInls('inlist_1.0','Blocker')
                                 R = ReadInls('inlist_1.0','Reimers')
@@ -185,21 +208,26 @@ if Q == 'A':
                         os.chdir(file_cab)
                 os.chdir(FV)
         os.chdir(FV+'/HRs/')
+
         name = 'HR_'+mo+da+'_'+hr+mn+'.png'
         Color = []
+
         for i in Reimers:
                 row = []
                 for j in i:
                         q = keys[j]
                         row.append(q)
                 Color.append(row)
+
         for i in range(len(Masses)):
                 A = Luminosities[i]
                 B = Temperatures[i]
                 C = Color[i][0]
                 plt.plot(B,A,color=C)
+
         plt.xlim(max(Textrema)+0.1,min(Textrema)-0.1)
         plt.show()
+
         # ptl.gcf()
         # plt.savefig('HR_'+mo+da+'_'+hr+mn+'.png')
         # plt.show()
