@@ -11,6 +11,10 @@ ANALYSING:
 
 - readdata.py goes through and uses the mesa module to create .out files of Blockers value, Reimers value, final mass, and "failed" values - i.e., stars that terminated for a reason other than reaching the lower luminiosity bound.
 - finished.py reads the termination code from the MESA output to make a little doc telling the user which runs finished and why.
+- CDAnalysis.py uses the kvalues.out file generated using RunatInt.py and follows the Krenovich 2004 algorithm to compute a final output scaling factor.
+- regression.r computes linear and quadratic fits to data using the .csv file produced with readdata.py
+- quadtratic_analysis.py follows the Krenovich 2008 algorithm, using the R quadtratic fit to conscruct bounds for the output value.
+
 
 PLOTTING:
 
