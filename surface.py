@@ -6,12 +6,8 @@ import os, shutil, re
 import collections
 from mpl_toolkits.mplot3d import Axes3D
 from matplotlib.mlab import griddata
-from scipy import ndimage
-from scipy.ndimage.filters import maximum_filter, minimum_filter
-from scipy.ndimage.morphology import generate_binary_structure, binary_erosion
-from scipy.signal import argrelmax, argrelmin
 
-path = '/data/mhoffman/NUQ/fine_grid/tmps'
+path = '/data/mhoffman/NUQ/1M_grid/data/'
 os.chdir(path)
 
 ofs = []
@@ -122,12 +118,53 @@ CX = []
 CY = []
 CZ = [] 
 
+for i in SortedX:
+    a = i.tolist()
+    CX.append(a)
+for i in SortedY:
+    a = i.tolist()
+    CY.append(a)
+for i in SortedZ:
+    a = i.tolist()
+    CZ.append(a)
+
+NX = np.asarray(CX)
+NY = np.asarray(CY)
+NZ = np.asarray(CZ)
+
+# Now we want to break everything into smaller arrays
+# size 6, as defined by the formula in the QRSM paper
+
+def Break(M,size):
+    result = []
+
+    num = M.shape[0]/size
+    nx = int(num)
+    num2 = M.shape[1]/size
+    ny = int(num2)
     
-xi = np.linspace(min(nX),max(nX))
-yi = np.linspace(min(nY),max(nY))
+    Q = np.array_split(M,nx,axis=1)
+    
+    for i in Q:
+        QN = np.array_split(i,ny)
+        result.append(QN)
 
-Q = griddata(nX,nY,nC,xi,yi,interp='linear')
+    return result
 
-fig, ax = plt.subplots()
+splitX = Break(NX,4)
+splitY = Break(NY,4)
+splitZ = Break(NZ,4)
+
+#print splitX
+#print splitY
+print splitZ
+
+
+#xi = np.linspace(min(nX),max(nX))
+#yi = np.linspace(min(nY),max(nY))
+
+#Q = griddata(nX,nY,nC,xi,yi,interp='linear')
+
+#fig, ax = plt.subplots()
 #ax.scatter(SortedX,SortedY,s=100,c=SortedZ,cmap=plt.cm.gray,vmin=min(C),vmax=max(C))
 
