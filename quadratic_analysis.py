@@ -282,3 +282,5 @@ mask = np.where(x_arr**2 + y_arr**2 <= 1.0)
 
 print "Minimum in elliptical region is: ", np.min(z_arr[mask])
 print "Maximum in elliptical region is: ", np.max(z_arr[mask])
+
+plt.show()
