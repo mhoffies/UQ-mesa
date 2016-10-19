@@ -7,10 +7,9 @@ import numpy as np
 from scipy.optimize import curve_fit
 
 class Point(object):
-    def __init__(self, x=0, y=0, z=0):
-        self.x = x
-        self.y = y
-        self.z = z
+    def __init__(self, r=[], v=None)
+        self.r = r # Position in n-D space
+        self.v = v # Value of point
 
 class Plane(object):
     def __init__(self, points=None):
@@ -50,13 +49,13 @@ class Plane(object):
         self.geom_norm_resd = np.sqrt(np.sum(self.norm_resd**2))
         
 class Tile(objects):
-    def __init__(self, points=[], lo=[0,0], hi=[1,1], nres_threshold=0.5):
+    def __init__(self, points=[], lo=[0,0], hi=[1,1]):
         self.children = []
-        self.closure = [lo] # List of points defining lower boundary
         self.points = points
         self.lo = lo
         self.hi = hi
-        self.nres_threshold = nres_threshold
+        self.dm = 2 # Number of dimensions
+        self.nres_threshold = 0.5
         self.min_contain_points = 3
         
     def get_vertices(self):
@@ -68,40 +67,42 @@ class Tile(objects):
         vertices.append([self.hi[0], self.lo[1]])
         return vertices
     
-    def get_up_limit_rectangle(self, vert):
-        # Extend a rectangle starting at a point defining its lower vertex
-        vertx = vert[0]
-        verty = vert[1]
-        hixlm = [self.hi[0]]
-        hiylm = [self.hi[1]]
-        for ctile in self.children:
-            lox = ctile.lo[0]
-            loy = ctile.lo[1]
-            hix = ctile.hi[0]
-            hiy = ctile.hi[1]
-            if lox > vertx and hiy > verty:
-                hixlm.append(lox)
-            if loy > verty and hix > vertx:
-                hiylm.append(loy)
-        xhi = min(hixlm)
-        yhi = min(hiylm)
-        return [xhi, yhi]
-
-    def get_enclosed_points(self, points, lo, hi):
-        # Return list of points within [lo, hi]
+    def get_enclosed_points(self, lo, hi):
+        # Return list of self.points within [lo, hi]
         inpts = []
-        lox = lo[0]
-        loy = lo[1]
-        hix = hi[0]
-        hiy = hi[1]
-        for pt in points:
-            if (pt.x >= lox and pt.x <= hix and
-                pt.y >= loy and pt.y <= hiy):
+        for pt in self.points:
+            pt_in = True
+            for di in xrange(dm):
+                if pt.r[di] < lo[di] or pt.r[di] > hi[di]:
+                    pt_in = False
+                    break
+            if pt_in:
                 inpts.append(pt)
         return inpts
 
+    def get_subtile(self, lo, hi):
+        # Return a Tile object corresponding to a subtile of self.
+        # Return None if Error.
+        
+        # First, check domain partitioning
+        if len(lo) != self.dm:
+            return None
+        if len(hi) != self.dm:
+            return None
+        for di in xrange(self.dm):
+            if lo[di] < self.lo[di] or lo[di] > self.hi[di]:
+                return None
+            if hi[di] < self.lo[di] or hi[di] > self.hi[di]:
+                return None
+        # Now get the points within [lo, hi]
+        inpts = self.get_enclosed_points(lo, hi)
+        # Create and return sub-Tile
+        stile = Tile(inpts, lo, hi)
+        return stile
+
     def get_dpt(self, a, b):
-        return np.sqrt((a.x - b.x)**2 + (a.y - b.y)**2)
+        dr = np.array(a.r) - np.array(b.r)
+        return np.sqrt(np.sum(dr**2))
 
     def get_distal_point(self, refpt, points):
         # Get the most distal point from refpt among points
@@ -141,13 +142,6 @@ class Tile(objects):
             uplim = self.get_up_limit_rectangle(cpt)
             inpts = self.get_enclosed_points(self.points, cpt, uplim)
             
-        # Start at lo
-        # Find hi_prime giving minimum number of points
-        # Expand 1 point at a time by points closest to lo in each direction until the next expansion gives geom_norm_resd > nres_threshold
-        # Set hi by bisecting the distance between the most distal point such that geom_norm_resd <= nres_threshold in each direction
-        # Create tile and repeat on the remaining space in the domain.
-        # If domain is not covered, ERROR.
-        
     def determine_subdivide(self):
         if len(self.points) == 3:
             return False
@@ -156,7 +150,9 @@ class Tile(objects):
             exit()
         p = Plane(self.points)
         if p.geom_norm_resd > self.nres_threshold:
-            self.subdivide()
+            return True
+        else:
+            return False
 
 # Read Data
 dfname = 'output2.csv'
@@ -184,6 +180,17 @@ hi = [np.amax(xvec), np.amax(yvec)]
 domain = Tile(pointlist, lo, hi)
 
 # Recursively subdivide domain
-
-
-
+while domain.determine_subdivide():
+    lo = domain.lo
+    hi = domain.hi
+    for di in xrange(domain.dm):
+        dvi = 0.5*(lo[di] + hi[di])
+        lo_dn = lo
+        hi_dn = hi
+        hi_dn[di] = dvi
+        lo_up = lo
+        hi_up = hi
+        lo_up[di] = dvi
+        domdn = domain.get_subtile(lo_dn, hi_dn)
+        domup = domain.get_subtile(lo_up, hi_up)
+        
