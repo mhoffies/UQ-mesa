@@ -154,6 +154,38 @@ class Tile(objects):
         else:
             return False
 
+class Domain(object):
+    def __init__(self, tiles=[], points=[], lo=[], hi=[]):
+        # The Domain is just a set of Tile objects
+        # and functions for managing them.
+        
+        self.tiles = tiles
+        self.lo = lo
+        self.hi = hi
+        
+        # Create a tile if only points, lo and hi are given
+        if lo and hi and points and not tiles:
+            t = Tile(points, lo, hi)
+            self.tiles.append(t)
+
+    def partition(self):
+        redo = True
+        while(redo):
+            for t in self.tiles:
+                while t.determine_subdivide():
+                    lo = t.lo
+                    hi = t.hi
+                    for di in xrange(t.dm):
+                        dvi = 0.5*(lo[di] + hi[di])
+                        lo_dn = lo
+                        hi_dn = hi
+                        hi_dn[di] = dvi
+                        lo_up = lo
+                        hi_up = hi
+                        lo_up[di] = dvi
+                        tile_dn = t.get_subtile(lo_dn, hi_dn)
+                        tile_up = t.get_subtile(lo_up, hi_up)
+
 # Read Data
 dfname = 'output2.csv'
 raw_data = np.genfromtxt(dfname, delimiter=',', skip_header=1)
@@ -176,21 +208,7 @@ for x, y, z in zip(xvec, yvec, zvec):
 lo = [np.amin(xvec), np.amin(yvec)]
 hi = [np.amax(xvec), np.amax(yvec)]
 
-# Form upper level Tile to start
-domain = Tile(pointlist, lo, hi)
+# Form Domain
+dom = Domain(pointlist, lo, hi)
 
-# Recursively subdivide domain
-while domain.determine_subdivide():
-    lo = domain.lo
-    hi = domain.hi
-    for di in xrange(domain.dm):
-        dvi = 0.5*(lo[di] + hi[di])
-        lo_dn = lo
-        hi_dn = hi
-        hi_dn[di] = dvi
-        lo_up = lo
-        hi_up = hi
-        lo_up[di] = dvi
-        domdn = domain.get_subtile(lo_dn, hi_dn)
-        domup = domain.get_subtile(lo_up, hi_up)
         
