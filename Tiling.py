@@ -13,10 +13,8 @@ class Point(object):
 
 class Plane(object):
     def __init__(self, points=None):
-        self.c0 = None
-        self.cx = None
-        self.cy = None
-        self.resd = None
+        self.cpars = None # Length n+1 for n-D space
+        self.resd  = None
         self.norm_resd = None
         self.geom_norm_resd = None
         self.compute_pars(points)
@@ -49,23 +47,24 @@ class Plane(object):
         self.geom_norm_resd = np.sqrt(np.sum(self.norm_resd**2))
         
 class Tile(objects):
-    def __init__(self, points=[], lo=[0,0], hi=[1,1]):
+    def __init__(self, points=[], lo=[], hi=[], dm=None):
         self.children = []
         self.points = points
         self.lo = lo
         self.hi = hi
-        self.dm = 2 # Number of dimensions
+        self.dm = dm
         self.nres_threshold = 0.5
         self.min_contain_points = 3
-        
-    def get_vertices(self):
-        # Return the vertices of the rectangle defined by lo, hi
-        vertices = []
-        vertices.append(self.lo)
-        vertices.append([self.lo[0], self.hi[1]])
-        vertices.append(self.hi)
-        vertices.append([self.hi[0], self.lo[1]])
-        return vertices
+
+    # # 2D
+    # def get_vertices(self):
+    #     # Return the vertices of the rectangle defined by lo, hi
+    #     vertices = []
+    #     vertices.append(self.lo)
+    #     vertices.append([self.lo[0], self.hi[1]])
+    #     vertices.append(self.hi)
+    #     vertices.append([self.hi[0], self.lo[1]])
+    #     return vertices
     
     def get_enclosed_points(self, lo, hi):
         # Return list of self.points within [lo, hi]
@@ -97,8 +96,48 @@ class Tile(objects):
         # Now get the points within [lo, hi]
         inpts = self.get_enclosed_points(lo, hi)
         # Create and return sub-Tile
-        stile = Tile(inpts, lo, hi)
+        stile = Tile(inpts, lo, hi, self.dm)
         return stile
+
+    def get_geom_norm_resd(self):
+        # Returns geometric mean of normalized residuals
+        # between the points in the Tile and a Plane fit.
+        p = Plane(self.points)
+        return p.geom_norm_resd
+
+    # # 2D
+    # def determine_subdivide(self):
+    #     if len(self.points) == 3:
+    #         return False
+    #     elif len(self.points) < 3:
+    #         print('ERROR: Tile contains less than 3 points')
+    #         exit()
+    #     geom_norm_resd = self.get_geom_norm_resd()
+    #     if geom_norm_resd > self.nres_threshold:
+    #         return True
+    #     else:
+    #         return False
+
+class Domain(object):
+    def __init__(self, tiles=[], points=[], lo=[], hi=[]):
+        # The Domain is just a set of Point objects
+        # and functions for tiling them into a set of Tile objects.
+        
+        self.tiles = tiles
+        self.lo = lo
+        self.hi = hi
+        self.dm = None
+
+        if lo and hi and len(lo) != len(hi):
+            print('ERROR: lo and hi supplied with incongruous dimensions.')
+            exit()
+        else:
+            self.dm = len(lo)
+        
+        # Create a tile if only points, lo and hi are given
+        if lo and hi and points and not tiles:
+            t = Tile(points, lo, hi, self.dm)
+            self.tiles.append(t)
 
     def get_dpt(self, a, b):
         dr = np.array(a.r) - np.array(b.r)
@@ -115,58 +154,12 @@ class Tile(objects):
                 pdst = p
         return pdst
 
-    def get_distal_x(self, refpt, points):
-        # Get most distal point in x direction
-        dmax = 0.0
-        pdst = None
-        for p in points:
-            dp = abs(p.x - refpt.x)
-            if dp > dmax:
-                dmax = dp
-                pdst = p
-        return pdst
+    def get_nearest_point
 
-    def get_distal_y(self, refpt, points):
-        # Get most distal point in y direction
-        dmax = 0.0
-        pdst = None
-        for p in points:
-            dp = abs(p.y - refpt.y)
-            if dp > dmax:
-                dmax = dp
-                pdst = p
-        return pdst
-            
     def extend_rectangle(self, vert):
         for cpt in closure:
             uplim = self.get_up_limit_rectangle(cpt)
             inpts = self.get_enclosed_points(self.points, cpt, uplim)
-            
-    def determine_subdivide(self):
-        if len(self.points) == 3:
-            return False
-        elif len(self.points) < 3:
-            print('ERROR: Tile contains less than 3 points')
-            exit()
-        p = Plane(self.points)
-        if p.geom_norm_resd > self.nres_threshold:
-            return True
-        else:
-            return False
-
-class Domain(object):
-    def __init__(self, tiles=[], points=[], lo=[], hi=[]):
-        # The Domain is just a set of Tile objects
-        # and functions for managing them.
-        
-        self.tiles = tiles
-        self.lo = lo
-        self.hi = hi
-        
-        # Create a tile if only points, lo and hi are given
-        if lo and hi and points and not tiles:
-            t = Tile(points, lo, hi)
-            self.tiles.append(t)
 
     def partition(self):
         redo = True
@@ -175,6 +168,7 @@ class Domain(object):
                 while t.determine_subdivide():
                     lo = t.lo
                     hi = t.hi
+                    divs = []
                     for di in xrange(t.dm):
                         dvi = 0.5*(lo[di] + hi[di])
                         lo_dn = lo
@@ -185,6 +179,11 @@ class Domain(object):
                         lo_up[di] = dvi
                         tile_dn = t.get_subtile(lo_dn, hi_dn)
                         tile_up = t.get_subtile(lo_up, hi_up)
+                        gnrd = tile_dn.get_geom_norm_resd() + tile_up.get_geom_norm_resd()
+                        dd = {'gnrd': gnrd, 'tdn': tile_dn, 'tup': tile_up}
+                        divs.append(dd)
+                    # Figure out which subdivision did best.
+                    
 
 # Read Data
 dfname = 'output2.csv'
