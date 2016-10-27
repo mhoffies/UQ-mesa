@@ -6,21 +6,55 @@ Donald Willcox
 import numpy as np
 from Plane_nd import Plane_nd
 
+class BCTypes(object):
+    # Boundary Types
+    up    = +1
+    none  = None
+    down  = -1
+
+class DMCycle(object):
+    # Dimension Cycler
+    def __init__(self, dm=None):
+        if not dm:
+            print('ERROR: Must provide number of dimensions to DMCycle!')
+            exit()
+        self.dm = dm
+        self.dims = range(self.dm)
+
+    def cycle(self):
+        t = self.dims.pop(0)
+        self.dims.append(t)
+        return t
+
 class Point(object):
     def __init__(self, r=[], v=None):
         # Position in n-D space
         self.r = np.array(r)
         # Value of point (Scalar)
         self.v = v
+        dm = len(r)
         # n-D Mask: Boundary Edge represented by Point
-        self.bedg = [None for i in range(len(r))]
+        self.bedge = [None for i in range(dm)]
         # n-D Mask: Boundary Type represented by Point
-        self.bdir = self.bcon
+        self.btype = [BCTypes.none for i in range(dm)]
 
     def dist_to_pt(self, b):
         # Get distance between this Point and Point b
         dr = np.array(self.r) - np.array(b.r)
         return np.sqrt(np.sum(dr**2))
+
+    def select_nn(self, plist):
+        # Select the nearest neighbor from point list plist
+        dmin = self.dist_to_pt(plist[0])
+        p_nn = plist[0]
+        pi_nn = 0
+        for pi, p in enumerate(plist):
+            dp = self.dist_to_pt(p)
+            if dp < dmin:
+                dmin = dp
+                p_nn = p
+                pi_nn = pi
+        return pi_nn, p_nn
 
 
 class Plane(object):
@@ -46,24 +80,13 @@ class Plane(object):
         
 class Tile(objects):
     def __init__(self, points=[], lo=[], hi=[], dm=None):
-        self.children = []
         self.points = points
         self.lo = lo
         self.hi = hi
         self.dm = dm
         self.nres_threshold = 0.5
-        self.min_contain_points = 3
+        self.min_contain_points = self.dm + 1
 
-    # # 2D
-    # def get_vertices(self):
-    #     # Return the vertices of the rectangle defined by lo, hi
-    #     vertices = []
-    #     vertices.append(self.lo)
-    #     vertices.append([self.lo[0], self.hi[1]])
-    #     vertices.append(self.hi)
-    #     vertices.append([self.hi[0], self.lo[1]])
-    #     return vertices
-    
     def get_enclosed_points(self, lo, hi):
         # Return list of self.points within [lo, hi]
         inpts = []
@@ -79,8 +102,7 @@ class Tile(objects):
 
     def get_subtile(self, lo, hi):
         # Return a Tile object corresponding to a subtile of self.
-        # Return None if Error.
-        
+        # Return None if Error.        
         # First, check domain partitioning
         if len(lo) != self.dm:
             return None
@@ -103,28 +125,15 @@ class Tile(objects):
         p = Plane(self.points, self.dm)
         return p.geom_norm_resd
 
-    # # 2D
-    # def determine_subdivide(self):
-    #     if len(self.points) == 3:
-    #         return False
-    #     elif len(self.points) < 3:
-    #         print('ERROR: Tile contains less than 3 points')
-    #         exit()
-    #     geom_norm_resd = self.get_geom_norm_resd()
-    #     if geom_norm_resd > self.nres_threshold:
-    #         return True
-    #     else:
-    #         return False
-
 class Domain(object):
-    def __init__(self, tiles=[], points=[], lo=[], hi=[]):
+    def __init__(self, points=[], lo=[], hi=[]):
         # The Domain is just a set of Point objects
-        # and functions for tiling them into a set of Tile objects.
-        
-        self.tiles = tiles
+        # and functions for tiling them into a set of Tile objects.        
+        self.tiles = []
         self.lo = lo
         self.hi = hi
         self.dm = None
+        self.points = points
 
         if lo and hi and len(lo) != len(hi):
             print('ERROR: lo and hi supplied with incongruous dimensions.')
@@ -132,77 +141,102 @@ class Domain(object):
         else:
             self.dm = len(lo)
         
-        # Create a tile if only points, lo and hi are given
-        if lo and hi and points and not tiles:
-            t = Tile(points, lo, hi, self.dm)
-            self.tiles.append(t)
-
     def get_distal_point(self, refpt, points):
-        # Get the most distal point from refpt among points
+        # Get the most distant point from refpt among points
         dmax = 0.0
         pdst = None
         for p in points:
-            dp = self.get_dpt(refpt, p)
+            dp = refpt.dist_to_pt(p)
             if dp > dmax:
                 dmax = dp
                 pdst = p
         return pdst
 
-    def get_nearest_point(self):
-        # Get the point nearest to a side of an n-D rectangle
+    def bc_init_mask_points(self):
+        # Set initial boundary masks for points in domain
+        # Initial because uses domain lo, hi
+        dm_hi_pts = [None for i in range(self.dm)]
+        dm_hi_val = self.lo
+        dm_lo_pts = [None for i in range(self.dm)]
+        dm_lo_val = self.hi
+        for p in self.points:
+            for di in range(self.dm):
+                # Check high bc
+                if p.r[di] > dm_hi_val[di]:
+                    # Point is high, use point as bc
+                    dm_hi_val[di] = p.r[di]
+                    dm_hi_pts[di] = p
+                if p.r[di] < dm_lo_val[di]:
+                    # Point is low, use point as bc
+                    dm_lo_val[di] = p.r[di]
+                    dm_lo_pts[di] = p
+        # Mask points in upper and lower bc lists
+        for di, p in enumerate(dm_hi_pts):
+            p.bedge[di] = self.hi[di]
+            p.btype[di] = BCTypes.up
+        for di, p in enumerate(dm_lo_pts):
+            p.bedge[di] = self.lo[di]
+            p.btype[di] = BCTypes.down
 
-    def extend_rectangle(self, vert):
-        for cpt in closure:
-            uplim = self.get_up_limit_rectangle(cpt)
-            inpts = self.get_enclosed_points(self.points, cpt, uplim)
+    def do_domain_tiling(self):
+        dm_cycle = DMCycle(self.dm)
+        # Get a dimension
+        di = dm_cycle.cycle()
+        # Select lower boundary point
+        p_start = None
+        pi_start = None
+        for pi, p in enumerate(self.points):
+            if p.btype[di] == BCTypes.down:
+                p_start = p
+                pi_start = pi
+                break
+        if not p_start and self.points:
+            print('ERROR: Points remain but no boundary could be found!')
+            exit()
+        # Form tile with starting point
+        t_start = Tile(points=[p_start], lo=p_start.r, hi=p_start.r, dm=self.dm)
 
-    def partition(self):
-        redo = True
-        while(redo):
-            for t in self.tiles:
-                while t.determine_subdivide():
-                    lo = t.lo
-                    hi = t.hi
-                    divs = []
-                    for di in range(t.dm):
-                        dvi = 0.5*(lo[di] + hi[di])
-                        lo_dn = lo
-                        hi_dn = hi
-                        hi_dn[di] = dvi
-                        lo_up = lo
-                        hi_up = hi
-                        lo_up[di] = dvi
-                        tile_dn = t.get_subtile(lo_dn, hi_dn)
-                        tile_up = t.get_subtile(lo_up, hi_up)
-                        gnrd = tile_dn.get_geom_norm_resd() + tile_up.get_geom_norm_resd()
-                        dd = {'gnrd': gnrd, 'tdn': tile_dn, 'tup': tile_up}
-                        divs.append(dd)
-                    # Figure out which subdivision did best.
-                    
+        extend_cycle = DMCycle(self.dm)
+        scratch_points = self.points[:]
+        scratch_points.pop(pi)
+        
+        # Extend to n NN (not necessary to check planarity)
+        # get a NN
+        num_nn = 0
+        while num_nn < self.dm+1:
+            pi_nn, p_nn = p_start.select_nn(scratch_points)
+            # Check to see if adding this NN will intersect existing Tiles.
+            # DON
 
-# Read Data
-dfname = 'output2.csv'
-raw_data = np.genfromtxt(dfname, delimiter=',', skip_header=1)
-# Each element of data is a row from the csv file, so convert to columns
-data = np.transpose(raw_data)
-# data[0] = Blocker factors
-xvec = data[0]
-# data[1] = Reimers factors
-yvec = data[1]
-# data[2] = CO WD Mass
-zvec = data[2]
+        # You have the n+1 point region R
+        
+        # extend R in each dimension
+        # cut R out of domain (remove points and update point masks)
+        # repeat while points remain in domain
+    
+# # Read Data
+# dfname = 'output2.csv'
+# raw_data = np.genfromtxt(dfname, delimiter=',', skip_header=1)
+# # Each element of data is a row from the csv file, so convert to columns
+# data = np.transpose(raw_data)
+# # data[0] = Blocker factors
+# xvec = data[0]
+# # data[1] = Reimers factors
+# yvec = data[1]
+# # data[2] = CO WD Mass
+# zvec = data[2]
 
-# Create list of Points
-pointlist = []
-for x, y, z in zip(xvec, yvec, zvec):
-    p = Point(x,y,z)
-    pointlist.append(p)
+# # Create list of Points
+# pointlist = []
+# for x, y, z in zip(xvec, yvec, zvec):
+#     p = Point(x,y,z)
+#     pointlist.append(p)
 
-# Get bounds on the x,y domain
-lo = [np.amin(xvec), np.amin(yvec)]
-hi = [np.amax(xvec), np.amax(yvec)]
+# # Get bounds on the x,y domain
+# lo = [np.amin(xvec), np.amin(yvec)]
+# hi = [np.amax(xvec), np.amax(yvec)]
 
-# Form Domain
-dom = Domain(pointlist, lo, hi)
+# # Form Domain
+# dom = Domain(pointlist, lo, hi)
 
         
