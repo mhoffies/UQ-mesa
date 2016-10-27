@@ -86,9 +86,9 @@ cmax = max(max(dd[2]),max(dd[7]))
 cmin = min(min(dd[2]),min(dd[7]))
 
 fig, (ax1, ax2) = plt.subplots(2, sharex=True, sharey=True)
-p1 = ax1.scatter(dd[0],dd[1],c=dd[2],cmap=plt.cm.gnuplot,vmin=cmin,vmax=cmax,linewidth=1)
+p1 = ax1.scatter(dd[0],dd[1],c=dd[2],cmap=plt.cm.Blues_r,vmin=cmin,vmax=cmax,linewidth=1)
 p2 = ax1.scatter(dd[3],dd[4],c='g',edgecolor='limegreen',linewidth=2,label='Not converged')
-p3 = ax2.scatter(dd[5],dd[6],c=dd[7],cmap=plt.cm.gnuplot,vmin=cmin,vmax=cmax,linewidth=1)
+p3 = ax2.scatter(dd[5],dd[6],c=dd[7],cmap=plt.cm.Blues_r,vmin=cmin,vmax=cmax,linewidth=1)
 p4 = ax2.scatter(dd[8],dd[9],c='g',edgecolor='limegreen',linewidth=2)
 
 fig.subplots_adjust(hspace=0)
@@ -110,7 +110,7 @@ ax2.set_xlabel('$\eta_{R}$', fontsize='large')
 #fig.set_ylabel('&\eta_{B}$')
 fig.text(0.04,0.5,'$\eta_{B}$', va='center', rotation='vertical',fontsize='large')
 
-fig.savefig('twoplot.eps',format='eps',dpi=1000)
+fig.savefig('twoplot2.eps',format='eps',dpi=1000)
 
 plt.show()
 
