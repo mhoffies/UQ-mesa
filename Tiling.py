@@ -4,46 +4,44 @@ Tile a 2-D domain containing Point objects depending on a decision function.
 Donald Willcox
 """
 import numpy as np
-from scipy.optimize import curve_fit
+from Plane_nd import Plane_nd
 
 class Point(object):
-    def __init__(self, r=[], v=None)
-        self.r = r # Position in n-D space
-        self.v = v # Value of point
+    def __init__(self, r=[], v=None):
+        # Position in n-D space
+        self.r = np.array(r)
+        # Value of point (Scalar)
+        self.v = v
+        # n-D Mask: Boundary Edge represented by Point
+        self.bedg = [None for i in range(len(r))]
+        # n-D Mask: Boundary Type represented by Point
+        self.bdir = self.bcon
+
+    def dist_to_pt(self, b):
+        # Get distance between this Point and Point b
+        dr = np.array(self.r) - np.array(b.r)
+        return np.sqrt(np.sum(dr**2))
+
 
 class Plane(object):
-    def __init__(self, points=None):
+    def __init__(self, points=None, dm=None):
         self.cpars = None # Length n+1 for n-D space
+        self.dm = dm
         self.resd  = None
         self.norm_resd = None
         self.geom_norm_resd = None
         self.compute_pars(points)
         
-    def fplane(self, xy, cy, cx, c0):
-        x = xy[0]
-        y = xy[1]
-        return c0 + cx * x + cy * y
-    
     def compute_pars(self, points):
         if not points:
             return
-        xvec = []
-        yvec = []
-        zvec = []
-        for p in points:
-            xvec.append(p.x)
-            yvec.append(p.y)
-            zvec.append(p.z)
-        xvec = np.array(xvec)
-        yvec = np.array(yvec)
-        zvec = np.array(zvec)
-        ivars = np.array([xvec, yvec])
-        popt, pcov = curve_fit(self.fplane, ivars, zvec)
-        pstd = np.sqrt(np.diag(pcov))
-        self.cy, self.cx, self.c0 = popt
-        zfit = self.fplane(ivars, self.cy, self.cx, self.c0)
-        self.resd = zvec - zfit
-        self.norm_resd = self.resd/zvec
+        ivars = np.array([p.r for p in points])
+        dvars = np.array([p.v for p in points])
+        fitter = Plane_nd(ivars, dvars, self.dm)
+        popt, pcov = fitter.dolsq()
+        dpfit = fitter.fplane(ivars, popt)
+        self.resd = dvars - dpfit
+        self.norm_resd = self.resd/dvars
         self.geom_norm_resd = np.sqrt(np.sum(self.norm_resd**2))
         
 class Tile(objects):
@@ -71,7 +69,7 @@ class Tile(objects):
         inpts = []
         for pt in self.points:
             pt_in = True
-            for di in xrange(dm):
+            for di in range(dm):
                 if pt.r[di] < lo[di] or pt.r[di] > hi[di]:
                     pt_in = False
                     break
@@ -88,7 +86,7 @@ class Tile(objects):
             return None
         if len(hi) != self.dm:
             return None
-        for di in xrange(self.dm):
+        for di in range(self.dm):
             if lo[di] < self.lo[di] or lo[di] > self.hi[di]:
                 return None
             if hi[di] < self.lo[di] or hi[di] > self.hi[di]:
@@ -102,7 +100,7 @@ class Tile(objects):
     def get_geom_norm_resd(self):
         # Returns geometric mean of normalized residuals
         # between the points in the Tile and a Plane fit.
-        p = Plane(self.points)
+        p = Plane(self.points, self.dm)
         return p.geom_norm_resd
 
     # # 2D
@@ -139,10 +137,6 @@ class Domain(object):
             t = Tile(points, lo, hi, self.dm)
             self.tiles.append(t)
 
-    def get_dpt(self, a, b):
-        dr = np.array(a.r) - np.array(b.r)
-        return np.sqrt(np.sum(dr**2))
-
     def get_distal_point(self, refpt, points):
         # Get the most distal point from refpt among points
         dmax = 0.0
@@ -154,7 +148,8 @@ class Domain(object):
                 pdst = p
         return pdst
 
-    def get_nearest_point
+    def get_nearest_point(self):
+        # Get the point nearest to a side of an n-D rectangle
 
     def extend_rectangle(self, vert):
         for cpt in closure:
@@ -169,7 +164,7 @@ class Domain(object):
                     lo = t.lo
                     hi = t.hi
                     divs = []
-                    for di in xrange(t.dm):
+                    for di in range(t.dm):
                         dvi = 0.5*(lo[di] + hi[di])
                         lo_dn = lo
                         hi_dn = hi

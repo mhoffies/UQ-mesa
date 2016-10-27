@@ -43,7 +43,7 @@ fitter.dolsq()
         fvals = np.array([dv - self.fplane(iv,pars) for dv, iv in zip(self.dvals, self.ivals)])
         return fvals
 
-    def dolsq(self):
+    def dolsq(self, do_print=False):
         xini = np.zeros(self.npars)
         xini[0] = np.average(self.dvals)
         # Find independent values at average of dependent var
@@ -64,14 +64,15 @@ fitter.dolsq()
             dv_min = self.dvals[iv_min_i]
             # Estimate slope
             xini[i] = (dv_max - dv_min)/(iv_max - iv_min)/self.dm
-        print(xini)
         popt, pcov, idict, mesg, ierr = leastsq(self.objfun, xini, full_output=True, xtol=1.e-20, ftol=1.e-16)
-        print(popt)
-        print(pcov)
-        for k in idict.keys():
-            print('{}: {}'.format(k, idict[k]))
-        print(mesg)
-        print(ierr)
+        if do_print:
+            print(popt)
+            print(pcov)
+            for k in idict.keys():
+                print('{}: {}'.format(k, idict[k]))
+            print(mesg)
+            print(ierr)
+        return popt, pcov
 
 
 
