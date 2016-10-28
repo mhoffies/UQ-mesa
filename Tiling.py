@@ -32,11 +32,11 @@ class Point(object):
         self.r = np.array(r)
         # Value of point (Scalar)
         self.v = v
-        dm = len(r)
+        self.dm = len(r)
         # n-D Mask: Boundary Edge represented by Point
-        self.bedge = [None for i in range(dm)]
+        self.bedge = [None for i in range(self.dm)]
         # n-D Mask: Boundary Type represented by Point
-        self.btype = [BCTypes.none for i in range(dm)]
+        self.btype = [BCTypes.none for i in range(self.dm)]
 
     def dist_to_pt(self, b):
         # Get distance between this Point and Point b
@@ -84,8 +84,104 @@ class Tile(objects):
         self.lo = lo
         self.hi = hi
         self.dm = dm
-        self.nres_threshold = 0.5
-        self.min_contain_points = self.dm + 1
+        if points and not dm:
+            self.dm = points[0].dm
+        if not lo and not hi:
+            self.boundary_minimize()
+
+    def get_volume(self):
+        """
+        Computes volume of the Tile. If [lo, hi] is undefined, return None.
+        """
+        if not self.lo or not self.hi:
+            return None
+        dr = np.array(self.hi) - np.array(self.lo)
+        return np.prod(dr)
+
+    def boundary_minimize(self):
+        """
+        Given the points in the Tile, set the boundary
+        defined by [lo, hi] to the minimum volume enclosing the points.
+        """
+        if self.points:
+            self.lo = self.points[0].r
+            self.hi = self.points[0].r
+            for p in self.points:
+                self.lo = np.minimum(self.lo, p.r)
+                self.hi = np.maximum(self.hi, p.r)
+
+    def extend_points(self, plist=[]):
+        """
+        Given the list of points (plist), extends the Tile if
+        necessary to enclose them.
+
+        Set the Tile boundaries to the minimum volume enclosing
+        the provided points.
+
+        Do nothing if no points are provided.
+        """
+        if not plist:
+            return
+        self.points += plist
+        self.boundary_minimize()
+
+    def overlaps_tiles(self, tlist=[]):
+        """
+        Checks to see if self overlaps any of the tiles in tlist
+
+        Returns list of tiles in tlist which overlap self
+
+        Returns the empty list if no tiles in tlist overlap self
+        """
+        if not tlist:
+            return False
+        olap = []
+        for reft in tlist:
+            # Check overlap between self and reft
+            reft_olap = True
+            for di in range(self.dm):
+                if (reft.lo[di] >= self.hi[di]
+                    or
+                    reft.hi[di] <= self.lo[di]):
+                    # tiles do not overlap
+                    reft_olap = False
+                    break
+            if reft_olap:
+                olap.append(reft)
+        return olap        
+
+    def extend_min_volume(self, plist=[], avoid_tiles=None):
+        """
+        Given the list of points (plist), extends the Tile
+        by adding one point from plist to Tile where the point 
+        is selected from plist such that it minimizes the volume
+        of Tile.
+
+        Returns plist where the selected point is popped from the list.
+
+        If avoid_tiles is passed, it should be a list of Tile objects.
+        The current Tile will then only be extended such that it does
+        not intersect the tiles in avoid_tiles.
+        """
+        min_vol_point_i = None
+        min_vol_point = None
+        min_vol = None
+        for i, p in enumerate(plist):
+            pext = self.points + [p]
+            stile = Tile(points=pext)
+            svol = stile.get_volume()
+            if (((not min_vol_point) or svol < min_vol) and
+                not stile.overlaps(avoid_tiles)):
+                min_vol = svol
+                min_vol_point = p
+                min_vol_point_i = i
+        if not min_vol_point:
+            # If the above could find no point to extend, then do nothing
+            return plist
+        else:
+            # Else, extend this Tile and return the reduced point list
+            self.extend_points([min_vol_point])
+            return plist.pop(i)
 
     def get_enclosed_points(self, lo, hi):
         # Return list of self.points within [lo, hi]
@@ -134,12 +230,15 @@ class Domain(object):
         self.hi = hi
         self.dm = None
         self.points = points
-
+        
         if lo and hi and len(lo) != len(hi):
             print('ERROR: lo and hi supplied with incongruous dimensions.')
             exit()
         else:
             self.dm = len(lo)
+
+        # Set up dimension cycling
+        self.dm_cycle = DMCycle(self.dm)
         
     def get_distal_point(self, refpt, points):
         # Get the most distant point from refpt among points
@@ -178,10 +277,9 @@ class Domain(object):
             p.bedge[di] = self.lo[di]
             p.btype[di] = BCTypes.down
 
-    def do_domain_tiling(self):
-        dm_cycle = DMCycle(self.dm)
+    def form_tile(self):
         # Get a dimension
-        di = dm_cycle.cycle()
+        di = self.dm_cycle.cycle()
         # Select lower boundary point
         p_start = None
         pi_start = None
@@ -194,25 +292,24 @@ class Domain(object):
             print('ERROR: Points remain but no boundary could be found!')
             exit()
         # Form tile with starting point
-        t_start = Tile(points=[p_start], lo=p_start.r, hi=p_start.r, dm=self.dm)
+        tile_start = Tile(points=[p_start], lo=p_start.r, hi=p_start.r, dm=self.dm)
 
-        extend_cycle = DMCycle(self.dm)
         scratch_points = self.points[:]
-        scratch_points.pop(pi)
+        scratch_points.pop(pi_start)
         
-        # Extend to n NN (not necessary to check planarity)
-        # get a NN
-        num_nn = 0
-        while num_nn < self.dm+1:
-            pi_nn, p_nn = p_start.select_nn(scratch_points)
-            # Check to see if adding this NN will intersect existing Tiles.
-            # DON
+        # Extend to enclose a total n+1 points for n-D parameter space.
+        # More points may be enclosed if it is not possible to enclose exactly n+1 points
+        while len(tile_start.points) < self.dm+1:
+            scratch_points = tile_start.extend_min_volume(plist=scratch_points,
+                                                          avoid_tiles=self.tiles)
 
-        # You have the n+1 point region R
-        
-        # extend R in each dimension
-        # cut R out of domain (remove points and update point masks)
-        # repeat while points remain in domain
+        # TODO:
+        # extend Tile checking the fit function
+        # cut R out of domain (remove points, update point masks, and set boundaries)
+
+    def do_domain_tiling(self):
+        while self.points:
+            self.form_tile()
     
 # # Read Data
 # dfname = 'output2.csv'
