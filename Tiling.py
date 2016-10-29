@@ -1,5 +1,5 @@
 """
-Tile a 2-D domain containing Point objects depending on a decision function.
+Tile an n-D domain containing Point objects depending on a decision function.
 
 Donald Willcox
 """
