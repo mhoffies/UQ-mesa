@@ -26,6 +26,14 @@ class DMCycle(object):
         self.dims.append(t)
         return t
 
+class TilingError(Error):
+    """Error class for various kinds of tiling errors that can arise."""
+    def __init__(self, err_tile=None, scratch_points=None, message):
+        # err_tile is the Tile object we were attempting to extend
+        self.err_tile = err_tile
+        self.scratch_points = scratch_points
+        self.message = message
+
 class Point(object):
     def __init__(self, r=[], v=None):
         # Position in n-D space
@@ -101,7 +109,7 @@ class Tile(objects):
     def boundary_minimize(self):
         """
         Given the points in the Tile, set the boundary
-        defined by [lo, hi] to the minimum volume enclosing the points.
+        defined by [lo, hi] to the minimum surface enclosing the points.
         """
         if self.points:
             self.lo = self.points[0].r
@@ -125,6 +133,21 @@ class Tile(objects):
         self.points += plist
         self.boundary_minimize()
 
+    def overlaps_tile_dimension(self, reftile, di):
+        """
+        Checks to see if self overlaps reftile in the dimension di:
+
+        reftile must be a Tile object
+
+        di must be an integer in range(self.dm)
+        """
+        reft_olap = True
+        if (reftile.lo[di] >= self.hi[di] or
+            reftile.hi[di] <= self.lo[di]):
+            # tiles do not overlap
+            reft_olap = False
+        return reft_olap
+
     def overlaps_tiles(self, tlist=[]):
         """
         Checks to see if self overlaps any of the tiles in tlist
@@ -140,17 +163,15 @@ class Tile(objects):
             # Check overlap between self and reft
             reft_olap = True
             for di in range(self.dm):
-                if (reft.lo[di] >= self.hi[di]
-                    or
-                    reft.hi[di] <= self.lo[di]):
+                reft_olap = self.overlaps_tile_dimension(reft, di)
+                if not reft_olap:
                     # tiles do not overlap
-                    reft_olap = False
                     break
             if reft_olap:
                 olap.append(reft)
         return olap        
 
-    def extend_min_volume(self, plist=[], avoid_tiles=None):
+    def extend_min_volume(self, plist=[], avoid_tiles=None, decision_fun=None):
         """
         Given the list of points (plist), extends the Tile
         by adding one point from plist to Tile where the point 
@@ -162,6 +183,10 @@ class Tile(objects):
         If avoid_tiles is passed, it should be a list of Tile objects.
         The current Tile will then only be extended such that it does
         not intersect the tiles in avoid_tiles.
+
+        If a function is passed as decision_fun, this Tile will be passed to
+        the 'decision function' to determine whether to extend the tile.
+        decision_fun should take a single Tile argument and return True or False.
         """
         min_vol_point_i = None
         min_vol_point = None
@@ -170,18 +195,26 @@ class Tile(objects):
             pext = self.points + [p]
             stile = Tile(points=pext)
             svol = stile.get_volume()
-            if (((not min_vol_point) or svol < min_vol) and
+            dbool = True
+            if callable(decision_fun):
+                dbool = decision_fun(stile)
+            if (((not min_vol_point) or svol < min_vol)
+                and
+                dbool
+                and
                 not stile.overlaps(avoid_tiles)):
                 min_vol = svol
                 min_vol_point = p
                 min_vol_point_i = i
         if not min_vol_point:
             # If the above could find no point to extend, then do nothing
-            return plist
+            # Return point list and False, indicating no extension
+            return plist, False
         else:
-            # Else, extend this Tile and return the reduced point list
+            # Else, extend this Tile
             self.extend_points([min_vol_point])
-            return plist.pop(i)
+            # Return reduced point list and True, indicating extension
+            return plist.pop(i), True
 
     def get_enclosed_points(self, lo, hi):
         # Return list of self.points within [lo, hi]
@@ -277,39 +310,113 @@ class Domain(object):
             p.bedge[di] = self.lo[di]
             p.btype[di] = BCTypes.down
 
-    def form_tile(self):
-        # Get a dimension
+    def set_tile_boundaries(self, atile):
+        """
+        Given atile, sets its [lo, hi] boundaries in each dimension.
+
+        Also updates the boundary masks for adjacent points
+        in the tiling list scratch_points.
+        """
+        # Expand Tile in each dimension as possible
+        for di in range(self.dm):
+            # Find the tiles which atile does not overlap in dimension di
+            # but does overlap in every other dimension.
+            # These tiles set the bounds on extensions along dimension di.
+            # (If there is an additional dimension along which the tiles
+            # do not overlap, then no constraint can be made along di.)
+            otiles = []
+            for ktile in self.tiles:
+                if atile.overlaps_tile_dimension(ktile, di):
+                    # ktile overlaps along di, so can't constrain di
+                    continue
+                kandidate = True
+                for dj in range(self.dm):
+                    if dj==di:
+                        continue
+                    if not atile.overlaps_tile_dimension(ktile, dj):
+                        # ktile doesn't overlap along dj, dj =/= di
+                        # so can't constrain di
+                        kandidate = False
+                        break
+                if kandidate:
+                    otiles.append(ktile)
+
+            # otiles contains constraining tiles along di
+            # DON:
+            # Get tile constraint on di for [lo, hi]
+
+            # Get point constraint on di for [lo, hi]
+
+            # If neither point nor tile constraint, use domain [lo, hi]
+            # Else, choose the most constraining type of constraint
+            # If point constraint, make that point a boundary along di
+            # Goto next dimension
+
+    def form_tile(self, gnr_thresh=0.5):
+        # Cycle through dimensions
         di = self.dm_cycle.cycle()
-        # Select lower boundary point
+        
+        # Select lower boundary point in dimension di
         p_start = None
         pi_start = None
         for pi, p in enumerate(self.points):
-            if p.btype[di] == BCTypes.down:
+            if p.btype[di] == BCTypes.down or p.btype[di] == BCTypes.up:
                 p_start = p
                 pi_start = pi
                 break
         if not p_start and self.points:
             print('ERROR: Points remain but no boundary could be found!')
             exit()
+            
         # Form tile with starting point
-        tile_start = Tile(points=[p_start], lo=p_start.r, hi=p_start.r, dm=self.dm)
-
-        scratch_points = self.points[:]
-        scratch_points.pop(pi_start)
+        atile= Tile(points=[p_start], lo=p_start.r, hi=p_start.r, dm=self.dm)
+        self.scratch_points.pop(pi_start)
         
         # Extend to enclose a total n+1 points for n-D parameter space.
         # More points may be enclosed if it is not possible to enclose exactly n+1 points
-        while len(tile_start.points) < self.dm+1:
-            scratch_points = tile_start.extend_min_volume(plist=scratch_points,
-                                                          avoid_tiles=self.tiles)
+        canex = True
+        while len(atile.points) < self.dm+1 and canex:
+            self.scratch_points, canex = atile.extend_min_volume(plist=self.scratch_points,
+                                                                 avoid_tiles=self.tiles)
+            
+        # Check the number of points, if it's less than n+1, raise an exception!
+        if len(atile.points) < self.dm+1:
+            raise TilingError(atile, self.scratch_points, 'Could not enclose n+1 points!')
+            
+        # extend Tile checking the fit decision function dfun
+        dfun  = (lambda t: t.get_geom_norm_resd() < gnr_thresh)
+        canex = True
+        while canex:
+            self.scratch_points, canex = atile.extend_min_volume(plist=self.scratch_points,
+                                                                 avoid_tiles=self.tiles,
+                                                                 decision_fun=dfun)
+            
+        # Check that at least n+1 points remain in the domain, otherwise raise an exception!
+        if len(self.scratch_points) < self.dm+1:
+            raise TilingError(atile, self.scratch_points, 'Fewer than n+1 points remain!')
+            
+        # set boundaries of atile and update point boundary masks
+        self.set_tile_boundaries(atile)
 
-        # TODO:
-        # extend Tile checking the fit function
-        # cut R out of domain (remove points, update point masks, and set boundaries)
+        # Add atile to tiles in this domain
+        self.tiles.append(atile)
 
-    def do_domain_tiling(self):
-        while self.points:
-            self.form_tile()
+    def do_domain_tiling(self, gnr_thresh=0.5):
+        # Initialize a list of scratch points for tiling
+        self.scratch_points = self.points[:]
+        # Clear current tiling
+        self.tiles = []
+        # Tile the domain given gnr_thresh
+        while self.scratch_points:
+            try:
+                self.form_tile(gnr_thresh)
+            except TilingError as terr:
+                print(terr.message)
+                print('Number of points in attempted tile: {}'.format(
+                    len(terr.err_tile.points)))
+                print('Number of points remaining in domain: {}'.format(
+                    len(terr.scratch_points)))
+                raise
     
 # # Read Data
 # dfname = 'output2.csv'
