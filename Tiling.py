@@ -68,29 +68,32 @@ class Point(object):
 
 
 class Plane(object):
-    def __init__(self, points=None, dm=None):
+    def __init__(self, points=None, fit_guess=None, dm=None):
+        # fit_guess should provide, well, a guess for the fit parameters
+        # if fit_guess isn't supplied, it will be estimated from the points.
         self.cpars = None # Length n+1 for n-D space
         self.dm = dm
         self.resd  = None
         self.norm_resd = None
         self.geom_norm_resd = None
-        self.compute_pars(points)
+        self.compute_pars(points, fit_guess)
         
-    def compute_pars(self, points):
+    def compute_pars(self, points, fit_guess):
         if not points:
             return
         ivars = np.array([p.r for p in points])
         dvars = np.array([p.v for p in points])
         fitter = Plane_nd(ivars, dvars, self.dm)
-        popt, pcov = fitter.dolsq()
+        popt, pcov = fitter.dolsq(fit_guess)
         dpfit = np.array([fitter.fplane(ivr, popt) for ivr in ivars])
         self.resd = dvars - dpfit
         self.norm_resd = self.resd/dvars
         self.geom_norm_resd = np.sqrt(np.sum(self.norm_resd**2))
         
 class Tile(object):
-    def __init__(self, points=[], lo=[], hi=[], dm=None):
+    def __init__(self, points=[], lo=[], hi=[], fit_guess=None, dm=None):
         self.points = points
+        self.fit_guess = fit_guess
         self.lo = lo
         self.hi = hi
         self.dm = dm
@@ -208,10 +211,9 @@ class Tile(object):
         min_vol_point_i = None
         min_vol_point = None
         min_vol = None
-        print('Type(plist): {}'.format(type(plist)))
         for i, p in enumerate(plist):
             pext = self.points + [p]
-            stile = Tile(points=pext)
+            stile = Tile(points=pext, fit_guess=self.fit_guess)
             svol = stile.get_volume()
             dbool = True
             if callable(decision_fun):
@@ -270,7 +272,9 @@ class Tile(object):
     def get_geom_norm_resd(self):
         # Returns geometric mean of normalized residuals
         # between the points in the Tile and a Plane fit.
-        p = Plane(self.points, self.dm)
+        p = Plane(points=self.points, fit_guess=self.fit_guess,
+                  dm=self.dm)
+        self.fit_guess = p.cpars
         return p.geom_norm_resd
 
 class Domain(object):
@@ -438,21 +442,25 @@ class Domain(object):
             if lo_bc_type == BCTypes.point:
                 # Set point bc masks wrt points remaining in domain
                 lo_bc_object.bedge[di] = lo_bc
-                lo_bc_object.btype[di] = BCTypes.upper
+                lo_bc_object.btype[di] = BCTypes.up
             if hi_bc_type == BCTypes.point:
                 # Set point bc masks wrt points remaining in domain
                 hi_bc_object.bedge[di] = hi_bc
-                hi_bc_object.btype[di] = BCTypes.lower
+                hi_bc_object.btype[di] = BCTypes.down
             # Go to next dimension
 
     def form_tile(self, gnr_thresh=0.5):
         # Cycle through dimensions
         di = self.dm_cycle.cycle()
+
+        print('Executing Domain.form_tile()')
+        print('Number of points in domain: {}'.format(len(self.points)))
+        print('Number of tiles in domain: {}'.format(len(self.tiles)))
         
         # Select lower boundary point in dimension di
         p_start = None
         pi_start = None
-        for pi, p in enumerate(self.points):
+        for pi, p in enumerate(self.scratch_points):
             if p.btype[di] == BCTypes.down or p.btype[di] == BCTypes.up:
                 p_start = p
                 pi_start = pi
@@ -460,42 +468,55 @@ class Domain(object):
         if not p_start and self.points:
             print('ERROR: Points remain but no boundary could be found!')
             print('Dimension {}'.format(di))
-            print('Number of Domain Points {}'.format(len(self.points)))
+            print('Number of Domain Points {}'.format(len(self.scratch_points)))
             print('Number of Domain Tiles {}'.format(len(self.tiles)))
             exit()
+        else:
+            print('Found starting boundary point')
+            print('Start index: {}'.format(pi_start))
+            print('Start position: {}'.format(p_start.r))
             
         # Form tile with starting point
         atile= Tile(points=[p_start], lo=p_start.r, hi=p_start.r, dm=self.dm)
         self.scratch_points.pop(pi_start)
-        
+
+        print('Getting at least n+1 points')
         # Extend to enclose a total n+1 points for n-D parameter space.
         # More points may be enclosed if exactly n+1 isn't possible
         canex = True
         while len(atile.points) < self.dm+1 and canex:
+            print('Attempted tile has {} points'.format(len(atile.points)))
             self.scratch_points, canex = atile.extend_min_volume(plist=self.scratch_points,
                                                                  avoid_tiles=self.tiles)
-            
+        print('Obtained {} points'.format(len(atile.points)))
+        
         # Check the number of points, if it's less than n+1, raise an exception!
         if len(atile.points) < self.dm+1:
             raise TilingError(atile, self.scratch_points, 
                               'Could not enclose n+1 points!')
             
         # extend Tile checking the fit decision function dfun
+        print('Extending initial tile')
         dfun  = (lambda t: t.get_geom_norm_resd() < gnr_thresh)
         canex = True
         while canex:
+            print('Attempted tile has {} points'.format(len(atile.points)))
             self.scratch_points, canex = atile.extend_min_volume(plist=self.scratch_points,
                                                                  avoid_tiles=self.tiles,
                                                                  decision_fun=dfun)
             
-        # Check that at least n+1 points remain in the domain, otherwise raise an exception!
+        # Check that at least n+1 points remain in the domain, otherwise warn user!
         if len(self.scratch_points) < self.dm+1:
-            raise TilingError(atile, self.scratch_points, 'Fewer than n+1 points remain!')
+            print('WARNING: FEWER THAN N+1 POINTS REMAIN IN DOMAIN.')
+            print('WARNING: FITTING AN N-D PLANE TO FEWER THAN N+1 POINTS IS ILL-CONDITIONED.')
+#            raise TilingError(atile, self.scratch_points, 'Fewer than n+1 points remain!')
             
         # set boundaries of atile and update point boundary masks
+        print('Updating point boundary masks')
         self.set_tile_boundaries(atile)
 
         # Add atile to tiles in this domain
+        print('Adding tile to domain')
         self.tiles.append(atile)
 
     def do_domain_tiling(self, gnr_thresh=0.5):
