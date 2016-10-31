@@ -83,7 +83,7 @@ class Plane(object):
         dvars = np.array([p.v for p in points])
         fitter = Plane_nd(ivars, dvars, self.dm)
         popt, pcov = fitter.dolsq()
-        dpfit = fitter.fplane(ivars, popt)
+        dpfit = np.array([fitter.fplane(ivr, popt) for ivr in ivars])
         self.resd = dvars - dpfit
         self.norm_resd = self.resd/dvars
         self.geom_norm_resd = np.sqrt(np.sum(self.norm_resd**2))
@@ -94,9 +94,9 @@ class Tile(object):
         self.lo = lo
         self.hi = hi
         self.dm = dm
-        if points and not dm:
+        if all(points) and not dm:
             self.dm = points[0].dm
-        if not lo and not hi:
+        if not all(lo) and not all(hi):
             self.boundary_minimize()
 
     def get_volume(self):
@@ -208,6 +208,7 @@ class Tile(object):
         min_vol_point_i = None
         min_vol_point = None
         min_vol = None
+        print('Type(plist): {}'.format(type(plist)))
         for i, p in enumerate(plist):
             pext = self.points + [p]
             stile = Tile(points=pext)
@@ -215,11 +216,11 @@ class Tile(object):
             dbool = True
             if callable(decision_fun):
                 dbool = decision_fun(stile)
-            if (((not min_vol_point) or svol < min_vol)
+            if (((not min_vol) or svol < min_vol)
                 and
                 dbool
                 and
-                not stile.overlaps(avoid_tiles)):
+                not stile.overlaps_tiles(avoid_tiles)):
                 min_vol = svol
                 min_vol_point = p
                 min_vol_point_i = i
@@ -231,7 +232,8 @@ class Tile(object):
             # Else, extend this Tile
             self.extend_points([min_vol_point])
             # Return reduced point list and True, indicating extension
-            return plist.pop(i), True
+            plist.pop(i)
+            return plist, True
 
     def get_enclosed_points(self, lo, hi):
         # Return list of self.points within [lo, hi]
@@ -289,6 +291,10 @@ class Domain(object):
 
         # Set up dimension cycling
         self.dm_cycle = DMCycle(self.dm)
+
+        # Set up boundary masks for points
+        if all(points) and all(lo) and all(hi):
+            self.bc_init_mask_points()
         
     def get_distal_point(self, refpt, points):
         # Get the most distant point from refpt among points
