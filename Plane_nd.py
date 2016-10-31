@@ -44,27 +44,30 @@ class Plane_nd(object):
         fvals = np.array([dv - self.fplane(iv,pars) for dv, iv in zip(self.dvals, self.ivals)])
         return fvals
 
-    def dolsq(self, do_print=False):
-        xini = np.zeros(self.npars)
-        xini[0] = np.average(self.dvals)
-        # Find independent values at average of dependent var
-        iave = np.abs(self.dvals-xini[0]).argmin()
-        iv_ave = self.ivals[iave]
-        ivt = np.transpose(self.ivals)
-        for i in np.arange(1, self.npars):
-            ivti = ivt[i-1]
-            # Find maximum value along independent axis
-            iv_max_i = ivti.argmax()
-            iv_max = ivti[iv_max_i]
-            # Find corresponding dependent variable value
-            dv_max = self.dvals[iv_max_i]
-            # Find minimum value along independent axis
-            iv_min_i = ivti.argmin()
-            iv_min = ivti[iv_min_i]
-            # Find corresponding dependent variable value
-            dv_min = self.dvals[iv_min_i]
-            # Estimate slope
-            xini[i] = (dv_max - dv_min)/(iv_max - iv_min)/self.dm
+    def dolsq(self, guess=None, do_print=False):
+        if guess:
+            # If guess is provided, it should provide a vector for the initial values xini
+            xini = np.array(guess)
+        else:
+            xini = np.zeros(self.npars)
+            xini[0] = np.average(self.dvals)
+            # Find independent values at average of dependent var
+            iave = np.abs(self.dvals-xini[0]).argmin()
+            ivt = np.transpose(self.ivals)
+            for i in np.arange(1, self.npars):
+                ivti = ivt[i-1]
+                # Find maximum value along independent axis
+                iv_max_i = ivti.argmax()
+                iv_max = ivti[iv_max_i]
+                # Find corresponding dependent variable value
+                dv_max = self.dvals[iv_max_i]
+                # Find minimum value along independent axis
+                iv_min_i = ivti.argmin()
+                iv_min = ivti[iv_min_i]
+                # Find corresponding dependent variable value
+                dv_min = self.dvals[iv_min_i]
+                # Estimate slope
+                xini[i] = (dv_max - dv_min)/(iv_max - iv_min)/self.dm
         popt, pcov, idict, mesg, ierr = leastsq(self.objfun, xini, full_output=True, xtol=1.e-20, ftol=1.e-16)
         if do_print:
             print(popt)
