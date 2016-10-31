@@ -1,7 +1,3 @@
-import numpy as np
-from scipy.optimize import leastsq
-
-class Plane_nd(object):
 """
 The Plane_nd class defines functions for 
 fitting an n-dimensional plane to data values 
@@ -25,6 +21,11 @@ fitter = Plane_nd(ivflat, dvflat, 3)
 fitter.dolsq()
 ```
 """    
+
+import numpy as np
+from scipy.optimize import leastsq
+
+class Plane_nd(object):
     def __init__(self, ivals, dvals, dm):
         self.ivals = ivals
         self.dvals = dvals
