@@ -21,16 +21,16 @@ class DMCycle(object):
             print('ERROR: Must provide number of dimensions to DMCycle!')
             exit()
         self.dm = dm
-        self.dims = range(self.dm)
+        self.dims = [i for i in range(self.dm)]
 
     def cycle(self):
         t = self.dims.pop(0)
         self.dims.append(t)
         return t
 
-class TilingError(Error):
+class TilingError(Exception):
     """Error class for various kinds of tiling errors that can arise."""
-    def __init__(self, err_tile=None, scratch_points=None, message):
+    def __init__(self, err_tile=None, scratch_points=None, message=''):
         # err_tile is the Tile object we were attempting to extend
         self.err_tile = err_tile
         self.scratch_points = scratch_points
@@ -88,7 +88,7 @@ class Plane(object):
         self.norm_resd = self.resd/dvars
         self.geom_norm_resd = np.sqrt(np.sum(self.norm_resd**2))
         
-class Tile(objects):
+class Tile(object):
     def __init__(self, points=[], lo=[], hi=[], dm=None):
         self.points = points
         self.lo = lo
@@ -505,30 +505,3 @@ class Domain(object):
                 print('Number of points remaining in domain: {}'.format(
                     len(terr.scratch_points)))
                 raise
-    
-# # Read Data
-# dfname = 'output2.csv'
-# raw_data = np.genfromtxt(dfname, delimiter=',', skip_header=1)
-# # Each element of data is a row from the csv file, so convert to columns
-# data = np.transpose(raw_data)
-# # data[0] = Blocker factors
-# xvec = data[0]
-# # data[1] = Reimers factors
-# yvec = data[1]
-# # data[2] = CO WD Mass
-# zvec = data[2]
-
-# # Create list of Points
-# pointlist = []
-# for x, y, z in zip(xvec, yvec, zvec):
-#     p = Point(x,y,z)
-#     pointlist.append(p)
-
-# # Get bounds on the x,y domain
-# lo = [np.amin(xvec), np.amin(yvec)]
-# hi = [np.amax(xvec), np.amax(yvec)]
-
-# # Form Domain
-# dom = Domain(pointlist, lo, hi)
-
-        
