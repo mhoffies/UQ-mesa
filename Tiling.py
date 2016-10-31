@@ -453,6 +453,9 @@ class Domain(object):
                 break
         if not p_start and self.points:
             print('ERROR: Points remain but no boundary could be found!')
+            print('Dimension {}'.format(di))
+            print('Number of Domain Points {}'.format(len(self.points)))
+            print('Number of Domain Tiles {}'.format(len(self.tiles)))
             exit()
             
         # Form tile with starting point
