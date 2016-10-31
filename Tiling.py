@@ -11,6 +11,8 @@ class BCTypes(object):
     up    = +1
     none  = None
     down  = -1
+    tile  = +2
+    point = +3
 
 class DMCycle(object):
     # Dimension Cycler
@@ -132,6 +134,21 @@ class Tile(objects):
             return
         self.points += plist
         self.boundary_minimize()
+
+    def overlaps_point_dimension(self, refpoint, di):
+        """
+        Checks to see if self overlaps refpoint in the dimension di:
+
+        refpoint must be a Point object
+
+        di must be an integer in range(self.dm)
+        """
+        refp_olap = True
+        if (refpoint.r[di] >= self.hi[di] or
+            refpoint.r[di] <= self.lo[di]):
+            # tiles do not overlap
+            refp_olap = False
+        return refp_olap
 
     def overlaps_tile_dimension(self, reftile, di):
         """
@@ -341,16 +358,86 @@ class Domain(object):
                 if kandidate:
                     otiles.append(ktile)
 
-            # otiles contains constraining tiles along di
-            # DON:
+            # Find the points which atile does not overlap in dimension di
+            # but does overlap in every other dimension.
+            # These points set the bounds on extensions along dimension di.
+            # (If there is an additional dimension along which the tile and points
+            # do not overlap, then no constraint can be made along di.)
+            opoints = []
+            for p in self.points:
+                if atile.overlaps_point_dimension(p, di):
+                    # p overlaps along di, so can't constrain di
+                    continue
+                kandidate = True
+                for dj in range(self.dm):
+                    if dj==di:
+                        continue
+                    if not atile.overlaps_point_dimension(p, dj):
+                        # p doesn't overlap along dj, dj =/= di
+                        # so can't constrain di
+                        kandidate = False
+                        break
+                if kandidate:
+                    opoints.append(p)
+            
+            # Setup bc data structures for figuring out boundaries
+            lo_bc = BCTypes.none
+            lo_bc_type = BCTypes.none
+            lo_bc_object = BCTypes.none
+            hi_bc = BCTypes.none
+            hi_bc_type = BCTypes.none
+            hi_bc_object = BCTypes.none
+
             # Get tile constraint on di for [lo, hi]
+            for btile in otiles:
+                # Check if btile can constrain lo along di
+                if btile.hi[di] <= atile.lo[di]:
+                    if lo_bc == BCTypes.none or btile.hi[di] > lo_bc:
+                        lo_bc = btile.hi[di]
+                        lo_bc_type = BCTypes.tile
+                        lo_bc_object = btile
+
+                # Check if btile can constrain hi along di
+                if btile.lo[di] >= atile.hi[di]:
+                    if hi_bc == BCTypes.none or btile.lo[di] < hi_bc:
+                        hi_bc = btile.lo[di]
+                        hi_bc_type = BCTypes.tile
+                        hi_bc_object = btile
 
             # Get point constraint on di for [lo, hi]
+            for p in opoints:
+                # Check if p can constrain lo along di
+                if p.r[di] <= atile.lo[di]:
+                    phalf = 0.5*(p.r[di] + atile.lo[di])
+                    if lo_bc == BCTypes.none or phalf > lo_bc:
+                        lo_bc = phalf
+                        lo_bc_type = BCTypes.point
+                        lo_bc_object = p
 
+                # Check if p can constrain hi along di
+                if p.r[di] >= atile.hi[di]:
+                    phalf = 0.5*(p.r[di] + atile.hi[di])
+                    if hi_bc == BCTypes.none or phalf < hi_bc:
+                        hi_bc = phalf
+                        hi_bc_type = BCTypes.point
+                        hi_bc_object = p
+            
             # If neither point nor tile constraint, use domain [lo, hi]
-            # Else, choose the most constraining type of constraint
+            if lo_bc == BCTypes.none:
+                lo_bc = self.lo[di]
+            if hi_bc == BCTypes.none:
+                hi_bc = self.hi[di]
+
             # If point constraint, make that point a boundary along di
-            # Goto next dimension
+            if lo_bc_type == BCTypes.point:
+                # Set point bc masks wrt points remaining in domain
+                lo_bc_object.bedge[di] = lo_bc
+                lo_bc_object.btype[di] = BCTypes.upper
+            if hi_bc_type == BCTypes.point:
+                # Set point bc masks wrt points remaining in domain
+                hi_bc_object.bedge[di] = hi_bc
+                hi_bc_object.btype[di] = BCTypes.lower
+            # Go to next dimension
 
     def form_tile(self, gnr_thresh=0.5):
         # Cycle through dimensions
