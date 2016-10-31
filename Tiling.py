@@ -203,7 +203,7 @@ class Tile(objects):
 
         If a function is passed as decision_fun, this Tile will be passed to
         the 'decision function' to determine whether to extend the tile.
-        decision_fun should take a single Tile argument and return True or False.
+        decision_fun should take a single Tile argument and return True or False
         """
         min_vol_point_i = None
         min_vol_point = None
@@ -361,7 +361,7 @@ class Domain(object):
             # Find the points which atile does not overlap in dimension di
             # but does overlap in every other dimension.
             # These points set the bounds on extensions along dimension di.
-            # (If there is an additional dimension along which the tile and points
+            # (If there is an additional dimension along which tile and points
             # do not overlap, then no constraint can be made along di.)
             opoints = []
             for p in self.points:
@@ -460,7 +460,7 @@ class Domain(object):
         self.scratch_points.pop(pi_start)
         
         # Extend to enclose a total n+1 points for n-D parameter space.
-        # More points may be enclosed if it is not possible to enclose exactly n+1 points
+        # More points may be enclosed if exactly n+1 isn't possible
         canex = True
         while len(atile.points) < self.dm+1 and canex:
             self.scratch_points, canex = atile.extend_min_volume(plist=self.scratch_points,
@@ -468,7 +468,8 @@ class Domain(object):
             
         # Check the number of points, if it's less than n+1, raise an exception!
         if len(atile.points) < self.dm+1:
-            raise TilingError(atile, self.scratch_points, 'Could not enclose n+1 points!')
+            raise TilingError(atile, self.scratch_points, 
+                              'Could not enclose n+1 points!')
             
         # extend Tile checking the fit decision function dfun
         dfun  = (lambda t: t.get_geom_norm_resd() < gnr_thresh)
