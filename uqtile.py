@@ -30,7 +30,7 @@ hi = [np.amax(xvec), np.amax(yvec)]
 dom = Domain(pointlist, lo, hi)
 
 # Tile Domain
-dom.do_domain_tiling()
+dom.do_domain_tiling(gnr_thresh=0.1)
 
 # List Tiles and Bounds
 for i, t in enumerate(dom.tiles):
