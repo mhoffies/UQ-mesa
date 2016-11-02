@@ -35,7 +35,7 @@ class Plane_nd(object):
     
     def fplane(self, x, *cpars):
         cpars = np.array(cpars)
-        xp = np.zeros(self.npars)
+        xp = np.empty(self.npars)
         xp[1:self.npars] = x[0:self.dm]
         xp[0] = 1.0
         return np.sum(xp * cpars)
