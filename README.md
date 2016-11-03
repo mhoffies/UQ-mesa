@@ -31,4 +31,4 @@ Some of my analyzing scripts utilise the mesa module for python from NuGridPy (n
 
 ## Tiling:
 
-- Tiling using, e.g. `uqtile.py`, relies on the ND-Tile program available [here](https://github.com/dwillcox/ND-Tile)
+- Tiling using, e.g. `uqtile.py`, relies on the ND-Tile program available [here](https://github.com/dwillcox/ND-Tile). Just add that directory to your PYTHONPATH environment variable.
