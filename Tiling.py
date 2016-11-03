@@ -141,9 +141,9 @@ class Tile(object):
         if not list(self.lo) or not list(self.hi):
             self.boundary_minimize()
 
-    def print_tile_report(self):
+    def print_tile_report(self, tile_number=None):
         """Prints report of this Tile"""
-        print('---TILE REPORT---')
+        print('---TILE {} REPORT---'.format(tile_number))
         print('lo = {}, hi = {}, npts = {}'.format(self.lo, self.hi, len(self.points)))
         print('---GEOM. MEAN NORM RESD. = {} ---'.format(self.get_geom_norm_resd()))
         print('---TILDE RESD. = {} ---'.format(self.get_tilde_resd()))
@@ -293,7 +293,7 @@ class Tile(object):
             dbool = True
             if callable(decision_fun):
                 dbool = decision_fun(stile)
-                print('dbool = {}'.format(dbool))
+                # print('dbool = {}'.format(dbool))
             if (((not min_vol) or svol < min_vol)
                 and
                 dbool):
@@ -400,7 +400,7 @@ class Domain(object):
         if list(points) and list(lo) and list(hi):
             self.bc_init_mask_points(self.points)
 
-    def plot_domain_slice(self, dimx=0, dimy=1, save_num=None):
+    def plot_domain_slice(self, dimx=0, dimy=1, save_num=None, show_tile_id=True):
         if self.dm < 2:
             return
         # Plot 2-D Slice of Domain
@@ -409,11 +409,17 @@ class Domain(object):
         # Plot Tile outlines
         linestyle_options = ['-', '--', '-.', ':']
         ls_cycler = DMCycle(len(linestyle_options))
-        for t in self.tiles:
+        for i, t in enumerate(self.tiles):
+            # Plot Tile outline
             ax.add_patch(Rectangle((t.lo[dimx], t.lo[dimy]), t.hi[dimx]-t.lo[dimx], t.hi[dimy]-t.lo[dimy], facecolor='None',
                                    edgecolor='orange',
                                    linewidth=1.5,
                                    linestyle=linestyle_options[ls_cycler.cycle()]))
+            tile_center_x = 0.5 * (t.lo[dimx] + t.hi[dimx])
+            tile_center_y = 0.5 * (t.lo[dimy] + t.hi[dimy])
+            # Plot Text in the center of the Tile
+            if show_tile_id:
+                ax.text(x=tile_center_x, y=tile_center_y, s='{}'.format(i))
         # Plot points inside Tiles
         points_x = []
         points_y = []
@@ -459,8 +465,8 @@ class Domain(object):
         for p in self.scratch_points:
             print('{}: {}'.format(p.r, p.v))
         print('--------TILES------')
-        for t in self.tiles:
-            t.print_tile_report()
+        for i, t in enumerate(self.tiles):
+            t.print_tile_report(tile_number=i)
         
     def bc_init_mask_points(self, plist):
         # Set initial boundary masks for list of points plist given domain boundaries
@@ -483,20 +489,20 @@ class Domain(object):
                 
         # Mask points in upper and lower bc lists
         for di, p in enumerate(dm_hi_pts):
-            print('BC HI PT {}'.format(di))
-            print('position: {}'.format(p.r))
+            # print('BC HI PT {}'.format(di))
+            # print('position: {}'.format(p.r))
             p.bedge[di] = self.hi[di]
             p.btype[di] = BCTypes.up
-            print('bedge: {}'.format(p.bedge[di]))
-            print('btype: {}'.format(p.btype[di]))
+            # print('bedge: {}'.format(p.bedge[di]))
+            # print('btype: {}'.format(p.btype[di]))
             
         for di, p in enumerate(dm_lo_pts):
-            print('BC LO PT {}'.format(di))
-            print('position: {}'.format(p.r))
+            # print('BC LO PT {}'.format(di))
+            # print('position: {}'.format(p.r))
             p.bedge[di] = self.lo[di]
             p.btype[di] = BCTypes.down
-            print('bedge: {}'.format(p.bedge[di]))
-            print('btype: {}'.format(p.btype[di]))
+            # print('bedge: {}'.format(p.bedge[di]))
+            # print('btype: {}'.format(p.btype[di]))
 
     def set_tile_boundaries(self, atile):
         """
@@ -614,9 +620,9 @@ class Domain(object):
                 hi_bc_object.btype[di] = BCTypes.down
 
             # Explain Yourself!
-            print('Setting Tile Boundaries along dimension {} for Reasons:'.format(di))
-            print('lo reason: {}'.format(lo_bc_type))
-            print('hi reason: {}'.format(hi_bc_type))
+            # print('Setting Tile Boundaries along dimension {} for Reasons:'.format(di))
+            # print('lo reason: {}'.format(lo_bc_type))
+            # print('hi reason: {}'.format(hi_bc_type))
             atile.print_tile_report()
             # Go to next dimension
 
@@ -625,15 +631,15 @@ class Domain(object):
         def dfun(atile):
             accept_tile = True
             if gnr_thresh:
-                print('checking gnr_thresh')
+                # print('checking gnr_thresh')
                 accept_tile = (accept_tile and
                                (atile.get_geom_norm_resd() < gnr_thresh))
             if tilde_resd_thresh:
-                print('checking tilde_resd_thresh')
+                # print('checking tilde_resd_thresh')
                 accept_tile = (accept_tile and
                                all(atile.get_tilde_resd() < tilde_resd_thresh))
             if tilde_resd_factor:
-                print('checking tilde_resd_factor')
+                # print('checking tilde_resd_factor')
                 if atile.previous_tilde_resd:
                     accept_tile = (accept_tile and
                                    all(atile.get_tilde_resd()/atile.previous_tilde_resd < tilde_resd_factor))
@@ -644,9 +650,9 @@ class Domain(object):
         # Cycle through dimensions
         di = self.dm_cycle.cycle()
 
-        print('Executing Domain.form_tile()')
-        print('Number of points in domain: {}'.format(len(self.scratch_points)))
-        print('Number of tiles in domain: {}'.format(len(self.tiles)))
+        # print('Executing Domain.form_tile()')
+        # print('Number of points in domain: {}'.format(len(self.scratch_points)))
+        # print('Number of tiles in domain: {}'.format(len(self.tiles)))
 
         # Select starting point
         # Choose the point with the closest minimum required nearest neighbors
@@ -671,24 +677,24 @@ class Domain(object):
                               err_tile=atile,
                               scratch_points=self.scratch_points, 
                               message='Could not find a starting point!')
-        else:
-            print('Found starting point')
-            print('Start index: {}'.format(pi_start))
-            print('Start position: {}'.format(p_start.r))
+
+        # print('Found starting point')
+        # print('Start index: {}'.format(pi_start))
+        # print('Start position: {}'.format(p_start.r))
             
         # Form tile with starting point
         atile = Tile(points=[p_start], lo=p_start.r, hi=p_start.r, dm=self.dm)
         self.scratch_points.pop(pi_start)
 
-        print('Getting at least n+1 points')
+        # print('Getting at least n+1 points')
         # Extend to enclose a total n+1 points for n-D parameter space.
         # More points may be enclosed if exactly n+1 isn't possible
         canex = True
         while len(atile.points) < self.dm+1 and canex:
             self.scratch_points, canex = atile.extend_min_volume(plist=self.scratch_points,
                                                                  avoid_tiles=self.tiles)
-            print('Attempted tile has {} points'.format(len(atile.points)))
-        print('Obtained {} points'.format(len(atile.points)))
+            # print('Attempted tile has {} points'.format(len(atile.points)))
+        # print('Obtained {} points'.format(len(atile.points)))
         
         # Check the number of points, if it's less than n+1,
         # return partially tiled points and raise an exception!
@@ -702,20 +708,20 @@ class Domain(object):
                               message='Could not enclose n+1 points!')
             
         # extend Tile checking the fit decision function decision_function
-        print('Extending initial tile')
+        # print('Extending initial tile')
         canex = True
         while canex:
             self.scratch_points, canex = atile.extend_min_volume(plist=self.scratch_points,
                                                                  avoid_tiles=self.tiles,
                                                                  decision_fun=decision_function)
-            print('Attempted tile has {} points'.format(len(atile.points)))
+            # print('Attempted tile has {} points'.format(len(atile.points)))
                         
         # set boundaries of atile and update point boundary masks
-        print('Updating point boundary masks')
+        # print('Updating point boundary masks')
         self.set_tile_boundaries(atile)
 
         # Add atile to tiles in this domain
-        print('Adding tile to domain')
+        # print('Adding tile to domain')
         self.tiles.append(atile)
 
         # Check that at least n+1 points remain in the domain, otherwise warn user!
@@ -758,7 +764,7 @@ class Domain(object):
             if min_gnr_stile:
                 canex_tiles = True
                 # set boundaries of min_gnr_stile and update point boundary masks
-                print('Updating point boundary masks and replacing atile=>stile')
+                # print('Updating point boundary masks and replacing atile=>stile')
                 self.scratch_points = min_out_spts[:]
                 self.tiles.pop(min_gnr_atile_i)
                 self.set_tile_boundaries(min_gnr_stile)
