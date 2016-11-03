@@ -786,8 +786,6 @@ class Domain(object):
         try:
             while self.scratch_points:
                 self.form_tile(decision_function)
-                self.plot_domain_slice()
-            self.print_domain_report()
         except TilingError as terr:
             print(terr.message)
             print('Number of points in attempted tile: {}'.format(
@@ -803,7 +801,10 @@ class Domain(object):
                 while self.scratch_points and canex:
                     print('EXTENDING EXISTING TILES')
                     canex = self.extend_existing_tiles()
-                    self.plot_domain_slice()
-                self.print_domain_report()
             else:
                 raise
+
+        # Output Results
+        self.plot_domain_slice()
+        self.print_domain_report()
+
