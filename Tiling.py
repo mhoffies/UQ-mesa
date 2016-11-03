@@ -20,6 +20,8 @@ class BCTypes(object):
 
 class TETypes(object):
     """Tiling Error Types"""
+    # Tiling cannot find a point to start tiling at
+    cannot_start_point = 0
     # Tiling cannot enclose enough points to constrain the fit
     cannot_enclose_enough_points = 1
     # Too few points remain in domain to constrain a fit on a new tile
@@ -650,21 +652,27 @@ class Domain(object):
         # Choose the point with the closest minimum required nearest neighbors
         p_start = None
         pi_start = None
+        min_dist_nn = None
         for pi, p in enumerate(self.scratch_points):
-            if p.btype[di] == BCTypes.down or p.btype[di] == BCTypes.up:
+            other_points = self.scratch_points[:]
+            other_points.pop(pi)
+            dnn = p.get_average_dist_nn(plist=other_points,
+                                        num_neighbors=self.dm)
+            if not min_dist_nn or dnn < min_dist_nn:
+                min_dist_nn = dnn
                 p_start = p
                 pi_start = pi
-                break
         if not p_start and self.scratch_points:
-            print('Points remain but no boundary could be found!')
+            print('Points remain but no starting point could be found!')
             print('Dimension {}'.format(di))
             print('Number of Domain Points {}'.format(len(self.scratch_points)))
             print('Number of Domain Tiles {}'.format(len(self.tiles)))
-            print('Re-establishing boundaries')
-            self.bc_init_mask_points(self.scratch_points)
-            self.form_tile(decision_function)
+            raise TilingError(err_type=TETypes.cannot_start_point,
+                              err_tile=atile,
+                              scratch_points=self.scratch_points, 
+                              message='Could not find a starting point!')
         else:
-            print('Found starting boundary point')
+            print('Found starting point')
             print('Start index: {}'.format(pi_start))
             print('Start position: {}'.format(p_start.r))
             
