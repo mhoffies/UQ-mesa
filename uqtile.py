@@ -38,4 +38,4 @@ hi = [np.amax(xvec), np.amax(yvec)]
 dom = Domain(points=pointlist, lo=lo, hi=hi)
 
 # Tile Domain
-dom.do_domain_tiling(gnr_thresh=0.05, tilde_resd_thresh=0.01, tilde_resd_factor=1.25)
+dom.do_domain_tiling(gnr_thresh=0.05, tilde_resd_thresh=0.01, tilde_resd_factor=1.25, attempt_virtual_shrink=True)
