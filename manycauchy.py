@@ -7,8 +7,9 @@ from scipy.stats import cauchy
 fig, ax = plt.subplots(1,1)
 mean,var,skew,kurt = cauchy.stats(moments='mvsk')
 
-x = np.linspace(cauchy.ppf(0.01),cauchy.ppf(0.99),1000)
-y = np.linspace(0,40,100)
+x = np.linspace(cauchy.ppf(0.01),cauchy.ppf(0.99),100000)
+y = np.linspace(0,140,100)
+y2 = np.linspace(0,80,100)
 ons = np.ones(100)
 
 plt.rc('text', usetex=True)
@@ -19,11 +20,11 @@ ax.plot(x, cauchy.pdf(x, loc=0.55334, scale=0.0102 ), color='#8c07ee', lw=3, lab
 ax.plot(x, cauchy.pdf(x, loc=0.54545, scale=0.0024 ), color='#ad1927', lw=3, label='$\Delta=0.0024$')
 ax.plot(x, cauchy.pdf(x, loc=0.59613, scale=0.0988 ), color='#f5ce00', lw=3, label='$\Delta=0.0988$')
 ax.plot(x, cauchy.pdf(x, loc=0.53622, scale=0.0349 ), color='#ff6600', lw=3, label='$\Delta=0.0349$')
-ax.plot(x, cauchy.pdf(x, loc=0.5237, scale=0.0295 ), color='#6ca6cd', lw=3, label='$\Delta=0.0295$')
-ax.plot(0.695*ons,y,'k--',lw=1)
+ax.plot(x, cauchy.pdf(x, loc=0.5237,  scale=0.0295 ), color='#6ca6cd', lw=3, label='$\Delta=0.0295$')
+ax.plot(0.695*ons,y2,'k--',lw=1)
 ax.plot(0.494*ons,y,'k--',lw=1)
 ax.legend(loc='best',frameon=False)
-ax.set_xlim([0.35,0.85])
+ax.set_xlim([0.425,0.75])
 
 #ax.set_title('Cauchy PDF')
 
