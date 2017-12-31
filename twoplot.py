@@ -101,7 +101,7 @@ labels = [h.get_label() for h in handles]
 
 #box = ax2.get_position()
 #ax2.set_position([box.x0, box.y0, box.width * 0.7, box.height])
-legend = fig.legend(handles=handles, labels = labels, fancybox=True)
+#legend = fig.legend(handles=handles, labels = labels, fancybox=True)
 
 ax1.set_xlim([0.28,0.92])
 ax1.set_ylim([-0.01,0.12])
@@ -111,6 +111,6 @@ ax2.set_xlabel('$\eta_{R}$', fontsize='large')
 fig.text(0.04,0.5,'$\eta_{B}$', va='center', rotation='vertical',fontsize='large')
 
 fig.savefig('twoplot2.eps',format='eps',dpi=1000)
-
+print(os.getcwd())
 plt.show()
 

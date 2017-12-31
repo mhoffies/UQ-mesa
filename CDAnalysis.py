@@ -31,7 +31,9 @@ def ReadInls(inlist,value):
 # Meaning if our x_1 = [0.3,0.9] and x_2 = [0.01,0.1] then
 # ytile = final mass from MESA run with x_1 = 0.6 and x_2 = 0.05
 
-midrun = '/data/mhoffman/NUQ/new_midpoints/tile4' # This should be a path the the ytilde folder
+#midrun = '/data/mhoffman/NUQ/new_midpoints/tile4' # This should be a path the the ytilde folder
+#midrun = '/data/mhoffman/NUQ/midpoint_mdc_0.5_var_1e3'
+midrun = '/data/mhoffman/NUQ/midpoint_mdc_0.25_var_5e4'
 os.chdir(midrun)
 s = ms.history_data()
 mass = s.get('star_mass')
@@ -43,8 +45,11 @@ ytilde = mass[ (len(mass)-1) ] # obtain the last mass
 #path = raw_input('Please provide path of top folder using: ')
 #os.chdir(path)
 
-paths = ['/data/mhoffman/NUQ/cdtiles/tile4']
+#paths = ['/data/mhoffman/NUQ/cdtiles/tile4']
 
+#paths = ['/data/mhoffman/NUQ/1M_grid_highres']
+
+paths = ['/data/mhoffman/NUQ/CD_grid_highres_2']
 kvals = []
 masses = []
 reims = []

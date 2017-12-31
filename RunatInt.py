@@ -26,12 +26,12 @@ def ChangeValue(inlist,newinl,param,newval):
         
 cwd = os.getcwd()
 # Change this name to whatever you what the test suite to be called
-topdir = '1M_CDGrid_split1'
+topdir = '1M_CDGrid_lowres'
 fpath = cwd+'/'+topdir
 
 # Number of folders w. unique Blockers & Reimers combinations
 # for our study, we would want ~200
-pts = 54
+pts = 210
 l = range(pts)
 runlist = l[0::6]
 
@@ -122,6 +122,10 @@ for i in range(pts):
                 runfile.write('mpirun -np 1 ./rn > run_out_'+str(i+2)+'.log &\n')
                 runfile.write('cd ../c'+str(i+3)+'\n')
                 runfile.write('mpirun -np 1 ./rn > run_out_'+str(i+3)+'.log &\n')
+                runfile.write('cd ../c'+str(i+4)+'\n')
+                runfile.write('mpirun -np 1 ./rn > run_out_'+str(i+4)+'.log &\n')
+                runfile.write('cd ../c'+str(i+5)+'\n')
+                runfile.write('mpirun -np 1 ./rn > run_out_'+str(i+5)+'.log &\n')
                 runfile.write('wait')
             else:
                 runfile.write(line)
